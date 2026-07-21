@@ -81,7 +81,7 @@ func (s *Serveur) creerTache(c *gin.Context) {
 		Etiquettes:   corps.Etiquettes,
 	})
 	if erreur != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"erreur": "creation de la tache impossible"})
+		c.JSON(http.StatusBadRequest, gin.H{"erreur": "creation de la tache impossible : " + erreur.Error()})
 		return
 	}
 	s.remplirURLsTache(tache)
@@ -131,13 +131,13 @@ func (s *Serveur) modifierTache(c *gin.Context) {
 	}
 	if corps.Affectations != nil {
 		if erreur := s.Depot.Affecter(contexte, tache.ID, corps.Affectations); erreur != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"erreur": "affectation impossible"})
+			c.JSON(http.StatusBadRequest, gin.H{"erreur": "affectation impossible : " + erreur.Error()})
 			return
 		}
 	}
 	if corps.Etiquettes != nil {
 		if erreur := s.Depot.Etiqueter(contexte, tache.ID, corps.Etiquettes); erreur != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"erreur": "etiquetage impossible"})
+			c.JSON(http.StatusBadRequest, gin.H{"erreur": "etiquetage impossible : " + erreur.Error()})
 			return
 		}
 	}

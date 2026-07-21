@@ -144,11 +144,13 @@ func (d *Depot) CreerTache(ctx context.Context, tache modeles.Tache) (*modeles.T
 	}
 	if len(tache.Affectations) > 0 {
 		if erreur = d.Affecter(ctx, tache.ID, tache.Affectations); erreur != nil {
+			d.SupprimerTache(ctx, tache.ID)
 			return nil, erreur
 		}
 	}
 	if len(tache.Etiquettes) > 0 {
 		if erreur = d.Etiqueter(ctx, tache.ID, tache.Etiquettes); erreur != nil {
+			d.SupprimerTache(ctx, tache.ID)
 			return nil, erreur
 		}
 	}
@@ -193,7 +195,36 @@ func (d *Depot) DeplacerTache(ctx context.Context, id, colonne string, position 
 	return transaction.Commit(ctx)
 }
 
+func distincts(valeurs []string) []string {
+	vus := map[string]bool{}
+	resultat := []string{}
+	for _, valeur := range valeurs {
+		if valeur == "" || vus[valeur] {
+			continue
+		}
+		vus[valeur] = true
+		resultat = append(resultat, valeur)
+	}
+	return resultat
+}
+
 func (d *Depot) Affecter(ctx context.Context, tache string, utilisateurs []string) error {
+	attendus := distincts(utilisateurs)
+	if len(attendus) > 0 {
+		var valides int
+		erreur := d.bd.QueryRow(ctx, `
+			SELECT count(DISTINCT m.utilisateur)
+			FROM taches t
+			JOIN projets p ON p.id = t.projet
+			JOIN membres m ON m.groupe = p.groupe
+			WHERE t.id = $1 AND m.utilisateur::text = ANY($2)`, tache, attendus).Scan(&valides)
+		if erreur != nil {
+			return erreur
+		}
+		if valides != len(attendus) {
+			return fmt.Errorf("un utilisateur affecte n'appartient pas au groupe du projet")
+		}
+	}
 	transaction, erreur := d.bd.Begin(ctx)
 	if erreur != nil {
 		return erreur
@@ -213,6 +244,21 @@ func (d *Depot) Affecter(ctx context.Context, tache string, utilisateurs []strin
 }
 
 func (d *Depot) Etiqueter(ctx context.Context, tache string, etiquettes []string) error {
+	attendues := distincts(etiquettes)
+	if len(attendues) > 0 {
+		var valides int
+		erreur := d.bd.QueryRow(ctx, `
+			SELECT count(DISTINCT e.id)
+			FROM taches t
+			JOIN etiquettes e ON e.projet = t.projet
+			WHERE t.id = $1 AND e.id::text = ANY($2)`, tache, attendues).Scan(&valides)
+		if erreur != nil {
+			return erreur
+		}
+		if valides != len(attendues) {
+			return fmt.Errorf("une etiquette n'appartient pas a ce projet")
+		}
+	}
 	transaction, erreur := d.bd.Begin(ctx)
 	if erreur != nil {
 		return erreur

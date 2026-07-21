@@ -28,15 +28,24 @@ function generer() {
 
 const pointsEntree = [
   { methode: "GET", chemin: "/projet", detail: "Colonnes, membres, étiquettes et lots du projet" },
+  { methode: "GET", chemin: "/membres", detail: "Membres du groupe : identifiant, nom, courriel, rôle et fonction" },
   { methode: "GET", chemin: "/taches", detail: "Toutes les tâches du tableau" },
-  { methode: "POST", chemin: "/taches", detail: "Créer une tâche : { titre, colonne, description?, points?, echeance?, affectations? }" },
+  { methode: "POST", chemin: "/taches", detail: "Créer une tâche : { titre, colonne, description?, points?, echeance?, lot?, affectations?, etiquettes? }" },
   { methode: "GET", chemin: "/taches/{id}", detail: "Détail d'une tâche" },
-  { methode: "PUT", chemin: "/taches/{id}", detail: "Modifier une tâche : { titre, description?, points?, echeance?, commit? }" },
+  { methode: "PUT", chemin: "/taches/{id}", detail: "Modifier une tâche : { titre, description?, points?, echeance?, lot?, commit? }" },
   { methode: "PUT", chemin: "/taches/{id}/deplacer", detail: "Déplacer vers une colonne : { colonne, position }" },
+  { methode: "PUT", chemin: "/taches/{id}/affectations", detail: "Remplacer les personnes affectées : { affectations: [identifiants] }" },
+  { methode: "PUT", chemin: "/taches/{id}/etiquettes", detail: "Remplacer les étiquettes : { etiquettes: [identifiants] }" },
   { methode: "PUT", chemin: "/taches/{id}/commit", detail: "Renseigner le commit une fois la tâche terminée : { commit }" },
   { methode: "GET", chemin: "/taches/{id}/commentaires", detail: "Lire les commentaires" },
   { methode: "POST", chemin: "/taches/{id}/commentaires", detail: "Commenter : { contenu }" },
   { methode: "GET", chemin: "/taches/{id}/activites", detail: "Journal d'activité de la tâche" },
+  { methode: "POST", chemin: "/etiquettes", detail: "Créer une étiquette : { nom, couleur? }" },
+  { methode: "PUT", chemin: "/etiquettes/{id}", detail: "Renommer une étiquette : { nom, couleur? }" },
+  { methode: "DELETE", chemin: "/etiquettes/{id}", detail: "Supprimer une étiquette" },
+  { methode: "POST", chemin: "/lots", detail: "Créer un lot : { nom, couleur?, echeance? }" },
+  { methode: "PUT", chemin: "/lots/{id}", detail: "Modifier un lot : { nom, couleur?, echeance? }" },
+  { methode: "DELETE", chemin: "/lots/{id}", detail: "Supprimer un lot" },
 ]
 
 const exemple = computed(
@@ -50,8 +59,8 @@ const exemple = computed(
     <div class="space-y-5">
       <p class="text-sm text-neutral-600 dark:text-neutral-400">
         Cette clé permet à un agent (IA, script, intégration continue…) d'agir sur ce projet en votre nom :
-        créer, déplacer et commenter des tâches, ou renseigner le commit d'une tâche terminée.
-        Elle est personnelle et limitée à ce projet.
+        créer, déplacer et commenter des tâches, affecter les membres du groupe, gérer les étiquettes
+        et les lots, ou renseigner le commit d'une tâche terminée. Elle est personnelle et limitée à ce projet.
       </p>
 
       <div class="rounded-xl border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-700 dark:bg-neutral-800/50">
