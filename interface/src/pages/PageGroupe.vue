@@ -14,6 +14,8 @@ import {
   utiliserSuppressionGroupe,
 } from "@/api/requetes"
 import { libellesRoles, roles } from "@/api/types"
+import { formulaireGroupe, formulaireMembre, formulaireProjet, valider } from "@/utilitaires/validation"
+import { extraireErreur } from "@/utilitaires/erreurs"
 import Bouton from "@/composants/ui/Bouton.vue"
 import Champ from "@/composants/ui/Champ.vue"
 import Zone from "@/composants/ui/Zone.vue"
@@ -46,19 +48,23 @@ const mutationProjet = utiliserMutationProjet()
 const dialogueMembre = ref(false)
 const courrielMembre = ref("")
 const roleMembre = ref("membre")
+const erreursMembre = ref<Record<string, string>>({})
 const erreurMembre = ref("")
 
 function ajouterMembre() {
   erreurMembre.value = ""
+  const resultat = valider(formulaireMembre, { courriel: courrielMembre.value, role: roleMembre.value })
+  erreursMembre.value = resultat.erreurs
+  if (!resultat.donnees) return
   mutationMembre.mutate(
-    { groupe: identifiant.value, courriel: courrielMembre.value.trim(), role: roleMembre.value },
+    { groupe: identifiant.value, ...resultat.donnees },
     {
       onSuccess: () => {
         dialogueMembre.value = false
         courrielMembre.value = ""
       },
-      onError: (erreur: any) => {
-        erreurMembre.value = erreur.response?.data?.erreur ?? "Ajout impossible"
+      onError: (erreur) => {
+        erreurMembre.value = extraireErreur(erreur)
       },
     },
   )
@@ -68,21 +74,28 @@ const dialogueProjet = ref(false)
 const nomProjet = ref("")
 const descriptionProjet = ref("")
 const couleurProjet = ref("#737373")
+const erreursProjet = ref<Record<string, string>>({})
+const erreurProjet = ref("")
 
 function creerProjet() {
-  if (!nomProjet.value.trim()) return
+  erreurProjet.value = ""
+  const resultat = valider(formulaireProjet, {
+    nom: nomProjet.value,
+    description: descriptionProjet.value,
+    couleur: couleurProjet.value,
+  })
+  erreursProjet.value = resultat.erreurs
+  if (!resultat.donnees) return
   mutationProjet.mutate(
-    {
-      groupe: identifiant.value,
-      nom: nomProjet.value.trim(),
-      description: descriptionProjet.value.trim(),
-      couleur: couleurProjet.value,
-    },
+    { groupe: identifiant.value, ...resultat.donnees },
     {
       onSuccess: () => {
         dialogueProjet.value = false
         nomProjet.value = ""
         descriptionProjet.value = ""
+      },
+      onError: (erreur) => {
+        erreurProjet.value = extraireErreur(erreur)
       },
     },
   )
@@ -91,17 +104,30 @@ function creerProjet() {
 const dialogueEdition = ref(false)
 const nomEdition = ref("")
 const descriptionEdition = ref("")
+const erreursEdition = ref<Record<string, string>>({})
+const erreurEdition = ref("")
 
 function ouvrirEdition() {
   nomEdition.value = groupe.value?.nom ?? ""
   descriptionEdition.value = groupe.value?.description ?? ""
+  erreursEdition.value = {}
+  erreurEdition.value = ""
   dialogueEdition.value = true
 }
 
 function modifierGroupe() {
+  erreurEdition.value = ""
+  const resultat = valider(formulaireGroupe, { nom: nomEdition.value, description: descriptionEdition.value })
+  erreursEdition.value = resultat.erreurs
+  if (!resultat.donnees) return
   mutationGroupe.mutate(
-    { id: identifiant.value, nom: nomEdition.value.trim(), description: descriptionEdition.value.trim() },
-    { onSuccess: () => (dialogueEdition.value = false) },
+    { id: identifiant.value, ...resultat.donnees },
+    {
+      onSuccess: () => (dialogueEdition.value = false),
+      onError: (erreur) => {
+        erreurEdition.value = extraireErreur(erreur)
+      },
+    },
   )
 }
 
@@ -214,11 +240,11 @@ function quitterGroupe() {
 
     <Dialogue :ouvert="dialogueMembre" titre="Ajouter un membre" @fermer="dialogueMembre = false">
       <form class="space-y-4" @submit.prevent="ajouterMembre">
-        <Champ v-model="courrielMembre" etiquette="Courriel" type="email" obligatoire indication="collegue@exemple.fr" />
+        <Champ v-model="courrielMembre" etiquette="Courriel" type="email" indication="collegue@exemple.fr" :erreur="erreursMembre.courriel" />
         <Selection v-model="roleMembre" etiquette="Rôle">
           <option v-for="role in roles" :key="role" :value="role">{{ libellesRoles[role] }}</option>
         </Selection>
-        <p v-if="erreurMembre" class="text-sm text-red-700 dark:text-red-500">{{ erreurMembre }}</p>
+        <p v-if="erreurMembre" class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800 dark:bg-red-950/40 dark:text-red-300">{{ erreurMembre }}</p>
         <p class="text-xs text-neutral-500">
           La personne doit s'être connectée au moins une fois à HistoryKanban.
         </p>
@@ -231,12 +257,13 @@ function quitterGroupe() {
 
     <Dialogue :ouvert="dialogueProjet" titre="Nouveau projet" @fermer="dialogueProjet = false">
       <form class="space-y-4" @submit.prevent="creerProjet">
-        <Champ v-model="nomProjet" etiquette="Nom" obligatoire indication="Refonte du site" />
-        <Zone v-model="descriptionProjet" etiquette="Description" />
+        <Champ v-model="nomProjet" etiquette="Nom" indication="Refonte du site" :erreur="erreursProjet.nom" />
+        <Zone v-model="descriptionProjet" etiquette="Description" :erreur="erreursProjet.description" />
         <label class="block space-y-1.5">
           <span class="text-sm font-medium text-neutral-700 dark:text-neutral-300">Couleur</span>
           <input v-model="couleurProjet" type="color" class="h-10 w-20 cursor-pointer rounded-lg border border-neutral-300 bg-white dark:border-neutral-700 dark:bg-neutral-900" />
         </label>
+        <p v-if="erreurProjet" class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800 dark:bg-red-950/40 dark:text-red-300">{{ erreurProjet }}</p>
       </form>
       <template #pied>
         <Bouton variante="secondaire" @click="dialogueProjet = false">Annuler</Bouton>
@@ -246,8 +273,9 @@ function quitterGroupe() {
 
     <Dialogue :ouvert="dialogueEdition" titre="Modifier le groupe" @fermer="dialogueEdition = false">
       <form class="space-y-4" @submit.prevent="modifierGroupe">
-        <Champ v-model="nomEdition" etiquette="Nom" obligatoire />
-        <Zone v-model="descriptionEdition" etiquette="Description" />
+        <Champ v-model="nomEdition" etiquette="Nom" :erreur="erreursEdition.nom" />
+        <Zone v-model="descriptionEdition" etiquette="Description" :erreur="erreursEdition.description" />
+        <p v-if="erreurEdition" class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800 dark:bg-red-950/40 dark:text-red-300">{{ erreurEdition }}</p>
       </form>
       <template #pied>
         <Bouton variante="secondaire" @click="dialogueEdition = false">Annuler</Bouton>

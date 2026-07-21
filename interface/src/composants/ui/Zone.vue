@@ -3,6 +3,7 @@ defineProps<{
   etiquette?: string
   lignes?: number
   indication?: string
+  erreur?: string
 }>()
 
 const modele = defineModel<string>({ default: "" })
@@ -15,7 +16,13 @@ const modele = defineModel<string>({ default: "" })
       v-model="modele"
       :rows="lignes ?? 3"
       :placeholder="indication"
-      class="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:placeholder:text-neutral-500"
+      class="w-full rounded-lg border bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none dark:bg-neutral-900 dark:text-neutral-100 dark:placeholder:text-neutral-500"
+      :class="
+        erreur
+          ? 'border-red-500 focus:border-red-600 dark:border-red-700'
+          : 'border-neutral-300 focus:border-neutral-500 dark:border-neutral-700'
+      "
     ></textarea>
+    <span v-if="erreur" class="block text-xs text-red-700 dark:text-red-500">{{ erreur }}</span>
   </label>
 </template>

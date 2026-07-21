@@ -2,6 +2,8 @@
 import { ref } from "vue"
 import { utiliserGroupes, utiliserMutationGroupe } from "@/api/requetes"
 import { libellesRoles } from "@/api/types"
+import { formulaireGroupe, valider } from "@/utilitaires/validation"
+import { extraireErreur } from "@/utilitaires/erreurs"
 import Bouton from "@/composants/ui/Bouton.vue"
 import Champ from "@/composants/ui/Champ.vue"
 import Zone from "@/composants/ui/Zone.vue"
@@ -14,19 +16,24 @@ const mutation = utiliserMutationGroupe()
 const dialogueOuvert = ref(false)
 const nom = ref("")
 const description = ref("")
+const erreurs = ref<Record<string, string>>({})
+const erreurApi = ref("")
 
 function creer() {
-  if (!nom.value.trim()) return
-  mutation.mutate(
-    { nom: nom.value.trim(), description: description.value.trim() },
-    {
-      onSuccess: () => {
-        dialogueOuvert.value = false
-        nom.value = ""
-        description.value = ""
-      },
+  erreurApi.value = ""
+  const resultat = valider(formulaireGroupe, { nom: nom.value, description: description.value })
+  erreurs.value = resultat.erreurs
+  if (!resultat.donnees) return
+  mutation.mutate(resultat.donnees, {
+    onSuccess: () => {
+      dialogueOuvert.value = false
+      nom.value = ""
+      description.value = ""
     },
-  )
+    onError: (erreur) => {
+      erreurApi.value = extraireErreur(erreur)
+    },
+  })
 }
 </script>
 
@@ -72,8 +79,11 @@ function creer() {
 
     <Dialogue :ouvert="dialogueOuvert" titre="Nouveau groupe" @fermer="dialogueOuvert = false">
       <form class="space-y-4" @submit.prevent="creer">
-        <Champ v-model="nom" etiquette="Nom" obligatoire indication="Équipe produit" />
-        <Zone v-model="description" etiquette="Description" indication="À quoi sert ce groupe ?" />
+        <Champ v-model="nom" etiquette="Nom" indication="Équipe produit" :erreur="erreurs.nom" />
+        <Zone v-model="description" etiquette="Description" indication="À quoi sert ce groupe ?" :erreur="erreurs.description" />
+        <p v-if="erreurApi" class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800 dark:bg-red-950/40 dark:text-red-300">
+          {{ erreurApi }}
+        </p>
       </form>
       <template #pied>
         <Bouton variante="secondaire" @click="dialogueOuvert = false">Annuler</Bouton>

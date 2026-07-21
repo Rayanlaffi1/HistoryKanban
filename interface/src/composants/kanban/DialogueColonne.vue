@@ -2,6 +2,8 @@
 import { reactive, ref, watch } from "vue"
 import type { Colonne } from "@/api/types"
 import { utiliserMutationColonne, utiliserSuppressionColonne } from "@/api/requetes"
+import { formulaireColonne, valider } from "@/utilitaires/validation"
+import { extraireErreur } from "@/utilitaires/erreurs"
 import Bouton from "@/composants/ui/Bouton.vue"
 import Champ from "@/composants/ui/Champ.vue"
 import Dialogue from "@/composants/ui/Dialogue.vue"
@@ -16,12 +18,16 @@ const emissions = defineEmits<{ fermer: [] }>()
 
 const formulaire = reactive({ nom: "", couleur: "#a3a3a3", limite: "" })
 const confirmation = ref(false)
+const erreurs = ref<Record<string, string>>({})
+const erreurApi = ref("")
 
 watch(
   () => proprietes.ouvert,
   (ouvert) => {
     if (!ouvert) return
     confirmation.value = false
+    erreurs.value = {}
+    erreurApi.value = ""
     formulaire.nom = proprietes.colonne?.nom ?? ""
     formulaire.couleur = proprietes.colonne?.couleur ?? "#a3a3a3"
     formulaire.limite = proprietes.colonne?.limite?.toString() ?? ""
@@ -33,16 +39,24 @@ const mutation = utiliserMutationColonne()
 const suppression = utiliserSuppressionColonne()
 
 function enregistrer() {
-  if (!formulaire.nom.trim()) return
+  erreurApi.value = ""
+  const resultat = valider(formulaireColonne, { ...formulaire })
+  erreurs.value = resultat.erreurs
+  if (!resultat.donnees) return
   mutation.mutate(
     {
       id: proprietes.colonne?.id,
       projet: proprietes.projet,
-      nom: formulaire.nom.trim(),
-      couleur: formulaire.couleur,
-      limite: formulaire.limite === "" ? null : Number(formulaire.limite),
+      nom: resultat.donnees.nom,
+      couleur: resultat.donnees.couleur,
+      limite: resultat.donnees.limite === "" ? null : Number(resultat.donnees.limite),
     },
-    { onSuccess: () => emissions("fermer") },
+    {
+      onSuccess: () => emissions("fermer"),
+      onError: (erreur) => {
+        erreurApi.value = extraireErreur(erreur)
+      },
+    },
   )
 }
 
@@ -58,14 +72,15 @@ function supprimer() {
 <template>
   <Dialogue :ouvert="ouvert" :titre="colonne ? 'Modifier la colonne' : 'Nouvelle colonne'" @fermer="emissions('fermer')">
     <form class="space-y-4" @submit.prevent="enregistrer">
-      <Champ v-model="formulaire.nom" etiquette="Nom" obligatoire indication="En revue" />
+      <Champ v-model="formulaire.nom" etiquette="Nom" indication="En revue" :erreur="erreurs.nom" />
       <div class="grid grid-cols-2 gap-4">
         <label class="block space-y-1.5">
           <span class="text-sm font-medium text-neutral-700 dark:text-neutral-300">Couleur</span>
           <input v-model="formulaire.couleur" type="color" class="h-10 w-20 cursor-pointer rounded-lg border border-neutral-300 bg-white dark:border-neutral-700 dark:bg-neutral-900" />
         </label>
-        <Champ v-model="formulaire.limite" etiquette="Limite de tâches" type="number" indication="Aucune" />
+        <Champ v-model="formulaire.limite" etiquette="Limite de tâches" type="number" indication="Aucune" :erreur="erreurs.limite" />
       </div>
+      <p v-if="erreurApi" class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800 dark:bg-red-950/40 dark:text-red-300">{{ erreurApi }}</p>
       <div v-if="colonne" class="border-t border-neutral-200 pt-3 dark:border-neutral-800">
         <button v-if="!confirmation" type="button" class="text-sm text-red-700 hover:underline dark:text-red-500" @click="confirmation = true">
           Supprimer la colonne et ses tâches

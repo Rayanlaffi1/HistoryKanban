@@ -12,6 +12,8 @@ import {
   utiliserProfil,
 } from "@/api/requetes"
 import { depuis, depuisChampDate, formaterDateHeure, versChampDate } from "@/utilitaires/dates"
+import { formulaireTache, valider } from "@/utilitaires/validation"
+import { extraireErreur } from "@/utilitaires/erreurs"
 import Bouton from "@/composants/ui/Bouton.vue"
 import Champ from "@/composants/ui/Champ.vue"
 import Zone from "@/composants/ui/Zone.vue"
@@ -75,6 +77,8 @@ const suppressionCommentaire = utiliserSuppressionCommentaire()
 const nouveauCommentaire = ref("")
 const confirmationSuppression = ref(false)
 const champFichier = ref<HTMLInputElement | null>(null)
+const erreurs = ref<Record<string, string>>({})
+const erreurApi = ref("")
 
 function basculer(liste: string[], valeur: string) {
   const indice = liste.indexOf(valeur)
@@ -83,21 +87,34 @@ function basculer(liste: string[], valeur: string) {
 }
 
 function enregistrer() {
-  if (!formulaire.titre.trim() || !formulaire.colonne) return
+  erreurApi.value = ""
+  const resultat = valider(formulaireTache, {
+    titre: formulaire.titre,
+    description: formulaire.description,
+    colonne: formulaire.colonne,
+    points: formulaire.points,
+  })
+  erreurs.value = resultat.erreurs
+  if (!resultat.donnees) return
   mutationTache.mutate(
     {
       id: proprietes.tache?.id,
       projet: proprietes.projet,
-      colonne: formulaire.colonne,
-      titre: formulaire.titre.trim(),
-      description: formulaire.description.trim(),
+      colonne: resultat.donnees.colonne,
+      titre: resultat.donnees.titre,
+      description: resultat.donnees.description,
       lot: formulaire.lot || null,
-      points: Number(formulaire.points) || 0,
+      points: Number(resultat.donnees.points) || 0,
       echeance: depuisChampDate(formulaire.echeance),
       affectations: formulaire.affectations,
       etiquettes: formulaire.etiquettes,
     },
-    { onSuccess: () => emissions("fermer") },
+    {
+      onSuccess: () => emissions("fermer"),
+      onError: (erreur) => {
+        erreurApi.value = extraireErreur(erreur)
+      },
+    },
   )
 }
 
@@ -138,8 +155,8 @@ function commenter() {
     @fermer="emissions('fermer')"
   >
     <div class="space-y-4">
-      <Champ v-model="formulaire.titre" etiquette="Titre" obligatoire indication="Que faut-il faire ?" />
-      <Zone v-model="formulaire.description" etiquette="Description" :lignes="4" />
+      <Champ v-model="formulaire.titre" etiquette="Titre" indication="Que faut-il faire ?" :erreur="erreurs.titre" />
+      <Zone v-model="formulaire.description" etiquette="Description" :lignes="4" :erreur="erreurs.description" />
 
       <div class="grid gap-4 sm:grid-cols-2">
         <Selection v-model="formulaire.colonne" etiquette="Colonne">
@@ -151,7 +168,7 @@ function commenter() {
             {{ lot.nom }}<template v-if="lot.echeance"> — {{ formaterDateHeure(lot.echeance) }}</template>
           </option>
         </Selection>
-        <Champ v-model="formulaire.points" etiquette="Points" type="number" />
+        <Champ v-model="formulaire.points" etiquette="Points" type="number" :erreur="erreurs.points" />
         <Champ v-model="formulaire.echeance" etiquette="Échéance" type="datetime-local" />
       </div>
 
@@ -281,6 +298,9 @@ function commenter() {
     </div>
 
     <template #pied>
+      <p v-if="erreurApi" class="mr-auto self-center rounded-lg bg-red-50 px-3 py-1.5 text-sm text-red-800 dark:bg-red-950/40 dark:text-red-300">
+        {{ erreurApi }}
+      </p>
       <Bouton variante="secondaire" @click="emissions('fermer')">Fermer</Bouton>
       <Bouton v-if="edition" :desactive="mutationTache.isPending.value" @click="enregistrer">
         {{ tache ? "Enregistrer" : "Créer la tâche" }}

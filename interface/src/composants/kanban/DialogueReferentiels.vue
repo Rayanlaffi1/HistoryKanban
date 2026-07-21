@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { reactive } from "vue"
+import { reactive, ref } from "vue"
+import { formulaireEtiquette, formulaireLot, valider } from "@/utilitaires/validation"
 import type { Etiquette, Lot } from "@/api/types"
 import {
   utiliserMutationEtiquette,
@@ -29,20 +30,27 @@ const suppressionEtiquette = utiliserSuppressionEtiquette()
 const mutationLot = utiliserMutationLot()
 const suppressionLot = utiliserSuppressionLot()
 
+const erreurEtiquette = ref("")
+const erreurLot = ref("")
+
 function creerEtiquette(projet: string) {
-  if (!nouvelleEtiquette.nom.trim()) return
+  const resultat = valider(formulaireEtiquette, { nom: nouvelleEtiquette.nom })
+  erreurEtiquette.value = resultat.erreurs.nom ?? ""
+  if (!resultat.donnees) return
   mutationEtiquette.mutate(
-    { projet, nom: nouvelleEtiquette.nom.trim(), couleur: nouvelleEtiquette.couleur },
+    { projet, nom: resultat.donnees.nom, couleur: nouvelleEtiquette.couleur },
     { onSuccess: () => (nouvelleEtiquette.nom = "") },
   )
 }
 
 function creerLot(projet: string) {
-  if (!nouveauLot.nom.trim()) return
+  const resultat = valider(formulaireLot, { nom: nouveauLot.nom })
+  erreurLot.value = resultat.erreurs.nom ?? ""
+  if (!resultat.donnees) return
   mutationLot.mutate(
     {
       projet,
-      nom: nouveauLot.nom.trim(),
+      nom: resultat.donnees.nom,
       couleur: nouveauLot.couleur,
       echeance: depuisChampDate(nouveauLot.echeance),
     },
@@ -82,6 +90,7 @@ const classeChamp =
           <input v-model="nouvelleEtiquette.couleur" type="color" class="h-9 w-12 cursor-pointer rounded-lg border border-neutral-300 dark:border-neutral-700" />
           <Bouton taille="petite" type="submit" :desactive="mutationEtiquette.isPending.value">Ajouter</Bouton>
         </form>
+        <p v-if="erreurEtiquette" class="mt-1 text-xs text-red-700 dark:text-red-500">{{ erreurEtiquette }}</p>
       </section>
 
       <section class="border-t border-neutral-200 pt-5 dark:border-neutral-800">
@@ -117,6 +126,7 @@ const classeChamp =
           <input v-model="nouveauLot.couleur" type="color" class="h-9 w-12 cursor-pointer rounded-lg border border-neutral-300 dark:border-neutral-700" />
           <Bouton taille="petite" type="submit" :desactive="mutationLot.isPending.value">Ajouter</Bouton>
         </form>
+        <p v-if="erreurLot" class="mt-1 text-xs text-red-700 dark:text-red-500">{{ erreurLot }}</p>
       </section>
     </div>
     <template #pied>

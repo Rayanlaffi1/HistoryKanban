@@ -1,5 +1,7 @@
 import axios from "axios"
 import { jeton, seDeconnecter } from "@/securite/keycloak"
+import { extraireErreur } from "@/utilitaires/erreurs"
+import { utiliserMagasinNotifications } from "@/magasins/notifications"
 
 export const client = axios.create({
   baseURL: (import.meta.env.VITE_URLAPI ?? "https://api.historykanban.localhost") + "/api",
@@ -15,6 +17,10 @@ client.interceptors.response.use(
   (erreur) => {
     if (erreur.response?.status === 401 && erreur.response?.data?.code === "session.remplacee") {
       seDeconnecter()
+      return Promise.reject(erreur)
+    }
+    if (erreur.config?.method !== "get") {
+      utiliserMagasinNotifications().annoncer("Action impossible", extraireErreur(erreur))
     }
     return Promise.reject(erreur)
   },
