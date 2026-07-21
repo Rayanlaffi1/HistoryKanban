@@ -133,6 +133,8 @@ services:
       traefik.enable: "true"
       traefik.http.routers.serveur.rule: Host(`api.historykanban.localhost`)
       traefik.http.routers.serveur.tls: "true"
+      traefik.http.routers.serveurchemin.rule: Host(`historykanban.localhost`) && (PathPrefix(`/api`) || PathPrefix(`/ws`) || PathPrefix(`/sante`))
+      traefik.http.routers.serveurchemin.tls: "true"
       traefik.http.services.serveur.loadbalancer.server.port: "8080"
     ports:
       - "8085:8080"
@@ -151,8 +153,8 @@ services:
     build:
       context: ./interface
       args:
-        VITE_URLAPI: https://api.historykanban.localhost
-        VITE_URLWS: wss://api.historykanban.localhost
+        VITE_URLAPI: https://historykanban.localhost
+        VITE_URLWS: wss://historykanban.localhost
         VITE_KEYCLOAKURL: https://auth.historykanban.localhost
         VITE_KEYCLOAKREALM: historykanban
         VITE_KEYCLOAKCLIENT: interface
