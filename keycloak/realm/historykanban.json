@@ -1,0 +1,133 @@
+{
+  "realm": "historykanban",
+  "enabled": true,
+  "displayName": "HistoryKanban",
+  "accessTokenLifespan": 10800,
+  "ssoSessionIdleTimeout": 14400,
+  "ssoSessionMaxLifespan": 36000,
+  "registrationAllowed": true,
+  "registrationEmailAsUsername": true,
+  "resetPasswordAllowed": true,
+  "rememberMe": true,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "sslRequired": "external",
+  "loginTheme": "historykanban",
+  "internationalizationEnabled": true,
+  "supportedLocales": ["fr", "en"],
+  "defaultLocale": "fr",
+  "eventsEnabled": true,
+  "eventsExpiration": 604800,
+  "adminEventsEnabled": true,
+  "eventsListeners": ["jboss-logging", "ext-event-http", "ext-event-webhook"],
+  "attributes": {
+    "_providerConfig.ext-event-http": "{\"targetUri\":\"http://serveur:8080/api/webhooks/keycloak\"}"
+  },
+  "smtpServer": {
+    "host": "courriel",
+    "port": "1025",
+    "from": "notifications@historykanban.fr",
+    "fromDisplayName": "HistoryKanban",
+    "auth": "false",
+    "ssl": "false",
+    "starttls": "false"
+  },
+  "browserFlow": "navigateur.magique",
+  "authenticationFlows": [
+    {
+      "alias": "navigateur.magique",
+      "description": "Navigateur avec lien magique",
+      "providerId": "basic-flow",
+      "topLevel": true,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "auth-cookie",
+          "requirement": "ALTERNATIVE",
+          "priority": 10,
+          "authenticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "identity-provider-redirector",
+          "requirement": "ALTERNATIVE",
+          "priority": 25,
+          "authenticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "flowAlias": "navigateur.magique.formulaires",
+          "requirement": "ALTERNATIVE",
+          "priority": 30,
+          "authenticatorFlow": true,
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "alias": "navigateur.magique.formulaires",
+      "description": "Choix entre mot de passe et lien magique",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "flowAlias": "navigateur.magique.motdepasse",
+          "requirement": "ALTERNATIVE",
+          "priority": 10,
+          "authenticatorFlow": true,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "ext-magic-form",
+          "requirement": "ALTERNATIVE",
+          "priority": 20,
+          "authenticatorFlow": false,
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "alias": "navigateur.magique.motdepasse",
+      "description": "Connexion par mot de passe",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "auth-username-password-form",
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "authenticatorFlow": false,
+          "userSetupAllowed": false
+        }
+      ]
+    }
+  ],
+  "roles": {
+    "realm": [
+      { "name": "administrateur", "description": "Administrateur de la plateforme" },
+      { "name": "membre", "description": "Membre standard" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "interface",
+      "name": "Interface HistoryKanban",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "fullScopeAllowed": true,
+      "rootUrl": "https://historykanban.localhost",
+      "baseUrl": "/",
+      "redirectUris": ["https://historykanban.localhost/*", "http://localhost:5173/*"],
+      "webOrigins": ["+"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "+"
+      }
+    }
+  ],
+  "users": []
+}
