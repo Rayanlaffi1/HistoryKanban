@@ -2,7 +2,7 @@ import Keycloak from "keycloak-js"
 
 const keycloak = new Keycloak({
   url: import.meta.env.VITE_KEYCLOAKURL ?? "https://auth.historykanban.localhost",
-  realm: import.meta.env.VITE_KEYCLOAKROYAUME ?? "historykanban",
+  realm: import.meta.env.VITE_KEYCLOAKREALM ?? "historykanban",
   clientId: import.meta.env.VITE_KEYCLOAKCLIENT ?? "interface",
 })
 

@@ -44,7 +44,7 @@ services:
       KC_HOSTNAME_STRICT: "false"
       KC_PROXY_HEADERS: xforwarded
     volumes:
-      - ./keycloak/royaume:/opt/keycloak/data/import
+      - ./keycloak/realm:/opt/keycloak/data/import
       - ./keycloak/themes/historykanban:/opt/keycloak/themes/historykanban
     labels:
       traefik.enable: "true"
@@ -118,7 +118,7 @@ services:
       BDURL: postgres://${BDUTILISATEUR}:${BDMDP}@basededonnees:5432/${BDNOM}?sslmode=disable
       KEYCLOAKURL: http://keycloak:8080
       KEYCLOAKURLPUBLIQUE: https://auth.historykanban.localhost
-      KEYCLOAKROYAUME: historykanban
+      KEYCLOAKREALM: historykanban
       MINIOHOTE: minio:9000
       MINIOURLPUBLIQUE: https://images.historykanban.localhost
       MINIOCLE: ${MINIOCLE}
@@ -154,7 +154,7 @@ services:
         VITE_URLAPI: https://api.historykanban.localhost
         VITE_URLWS: wss://api.historykanban.localhost
         VITE_KEYCLOAKURL: https://auth.historykanban.localhost
-        VITE_KEYCLOAKROYAUME: historykanban
+        VITE_KEYCLOAKREALM: historykanban
         VITE_KEYCLOAKCLIENT: interface
     labels:
       traefik.enable: "true"

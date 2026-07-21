@@ -10,7 +10,7 @@ type Configuration struct {
 	BDURL               string
 	KeycloakURL         string
 	KeycloakURLPublique string
-	KeycloakRoyaume     string
+	KeycloakRealm       string
 	MinioHote           string
 	MinioURLPublique    string
 	MinioCle            string
@@ -37,7 +37,7 @@ func Charger() Configuration {
 		BDURL:               lire("BDURL", "postgres://historykanban:historykanban@localhost:5432/historykanban?sslmode=disable"),
 		KeycloakURL:         lire("KEYCLOAKURL", "http://localhost:8081"),
 		KeycloakURLPublique: lire("KEYCLOAKURLPUBLIQUE", "https://auth.historykanban.localhost"),
-		KeycloakRoyaume:     lire("KEYCLOAKROYAUME", "historykanban"),
+		KeycloakRealm:       lire("KEYCLOAKREALM", "historykanban"),
 		MinioHote:           lire("MINIOHOTE", "localhost:9000"),
 		MinioURLPublique:    lire("MINIOURLPUBLIQUE", "https://images.historykanban.localhost"),
 		MinioCle:            lire("MINIOCLE", "historykanban"),
@@ -52,9 +52,9 @@ func Charger() Configuration {
 }
 
 func (c Configuration) URLJWKS() string {
-	return c.KeycloakURL + "/realms/" + c.KeycloakRoyaume + "/protocol/openid-connect/certs"
+	return c.KeycloakURL + "/realms/" + c.KeycloakRealm + "/protocol/openid-connect/certs"
 }
 
 func (c Configuration) Emetteur() string {
-	return c.KeycloakURLPublique + "/realms/" + c.KeycloakRoyaume
+	return c.KeycloakURLPublique + "/realms/" + c.KeycloakRealm
 }

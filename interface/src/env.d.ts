@@ -10,7 +10,7 @@ interface ImportMetaEnv {
   readonly VITE_URLAPI: string
   readonly VITE_URLWS: string
   readonly VITE_KEYCLOAKURL: string
-  readonly VITE_KEYCLOAKROYAUME: string
+  readonly VITE_KEYCLOAKREALM: string
   readonly VITE_KEYCLOAKCLIENT: string
 }
 
