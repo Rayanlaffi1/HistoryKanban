@@ -25,7 +25,10 @@ onClickOutside(zonePanneau, () => (panneauOuvert.value = false))
   >
     <div class="mx-auto flex h-14 max-w-7xl items-center justify-between gap-2 px-3 sm:px-4">
       <div class="flex min-w-0 items-center gap-2 sm:gap-6">
-        <RouterLink to="/" class="shrink-0 text-base font-bold tracking-tight sm:text-lg">HistoryKanban</RouterLink>
+        <RouterLink to="/" class="flex shrink-0 items-center gap-2 text-base font-bold tracking-tight sm:text-lg">
+          <img src="/icone-192.png" alt="" class="h-7 w-7" />
+          <span class="hidden min-[420px]:inline">HistoryKanban</span>
+        </RouterLink>
         <nav class="flex items-center gap-0.5 text-sm sm:gap-1">
           <RouterLink
             to="/"
