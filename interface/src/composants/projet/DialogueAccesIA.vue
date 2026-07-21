@@ -50,7 +50,7 @@ const pointsEntree = [
 
 const exemple = computed(
   () =>
-    `curl -k ${base.value}/taches \\\n  -H "X-Cle-API: ${cle.value?.cle ?? "<votre cle>"}" \\\n  -H "Content-Type: application/json" \\\n  -d '{"titre":"Ma tache","colonne":"<id colonne>"}' -X POST`,
+    `curl -k -X POST ${base.value}/taches \\\n  -H "X-Cle-API: ${cle.value?.cle ?? "<votre cle>"}" \\\n  -H "Content-Type: application/json; charset=utf-8" \\\n  --data-binary @tache.json\n\n# tache.json, enregistré en UTF-8 :\n# {"titre":"Créer la página d'accueil","colonne":"<id colonne>","points":3}`,
 )
 </script>
 
@@ -143,6 +143,11 @@ const exemple = computed(
         <pre
           class="mt-3 overflow-x-auto rounded-xl bg-neutral-900 p-4 font-mono text-xs leading-relaxed text-neutral-100 dark:bg-neutral-800"
         >{{ exemple }}</pre>
+        <p class="mt-2 text-xs text-neutral-500">
+          Les accents passent par un fichier UTF-8 avec <code class="font-mono">--data-binary</code> : sous Windows,
+          les écrire directement dans <code class="font-mono">-d "…"</code> les corrompt. Le serveur rattrape
+          néanmoins les corps en Windows-1252 et retire le BOM ajouté par PowerShell.
+        </p>
       </div>
     </div>
     <template #pied>

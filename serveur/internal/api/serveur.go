@@ -97,7 +97,7 @@ func (s *Serveur) Routeur() *gin.Engine {
 	api.POST("/taches/:id/images", s.televerserImage)
 	api.DELETE("/images/:id", s.supprimerImage)
 
-	agent := moteur.Group("/api/agent", s.authentifierAgent())
+	agent := moteur.Group("/api/agent", normaliserCorps(), s.authentifierAgent())
 	agent.GET("/projet", s.forcerProjetAgent(s.obtenirProjet))
 	agent.GET("/membres", s.agentListerMembres)
 	agent.POST("/etiquettes", s.forcerProjetAgent(s.creerEtiquette))

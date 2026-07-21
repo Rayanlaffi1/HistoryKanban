@@ -175,7 +175,7 @@ func (s *Serveur) agentRenseignerCommit(c *gin.Context) {
 		return
 	}
 	commit := strings.TrimSpace(corps.Commit)
-	if len(commit) > 100 {
+	if len([]rune(commit)) > 100 {
 		c.JSON(http.StatusBadRequest, gin.H{"erreur": "le commit ne doit pas depasser 100 caracteres"})
 		return
 	}
