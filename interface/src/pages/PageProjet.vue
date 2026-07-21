@@ -11,6 +11,7 @@ import {
 import type { Colonne, FiltreTaches, Tache } from "@/api/types"
 import { abonnerProjet, desabonnerProjet } from "@/tempsreel/prise"
 import Bouton from "@/composants/ui/Bouton.vue"
+import BoutonRetour from "@/composants/ui/BoutonRetour.vue"
 import ColonneKanban from "@/composants/kanban/ColonneKanban.vue"
 import FiltresTaches from "@/composants/kanban/FiltresTaches.vue"
 import DialogueTache from "@/composants/kanban/DialogueTache.vue"
@@ -120,13 +121,7 @@ const dialogueReferentiels = ref(false)
       <div class="mx-auto max-w-full">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div class="flex items-center gap-3">
-            <RouterLink
-              v-if="detail"
-              :to="`/groupes/${detail.projet.groupe}`"
-              class="text-sm text-neutral-500 hover:underline"
-            >
-              ← Groupe
-            </RouterLink>
+            <BoutonRetour v-if="detail" :vers="`/groupes/${detail.projet.groupe}`" etiquette="Groupe" />
             <span
               v-if="detail"
               class="h-3 w-3 rounded-full"

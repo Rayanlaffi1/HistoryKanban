@@ -23,6 +23,7 @@ import Dialogue from "@/composants/ui/Dialogue.vue"
 import Selection from "@/composants/ui/Selection.vue"
 import Avatar from "@/composants/ui/Avatar.vue"
 import Badge from "@/composants/ui/Badge.vue"
+import BoutonRetour from "@/composants/ui/BoutonRetour.vue"
 
 const route = useRoute()
 const routeur = useRouter()
@@ -148,7 +149,7 @@ function quitterGroupe() {
 
 <template>
   <div class="mx-auto max-w-7xl px-4 py-8">
-    <RouterLink to="/" class="text-sm text-neutral-500 hover:underline">← Retour aux groupes</RouterLink>
+    <BoutonRetour vers="/" etiquette="Retour aux groupes" />
 
     <div class="mt-4 flex flex-wrap items-start justify-between gap-4">
       <div>
