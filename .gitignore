@@ -5,6 +5,7 @@ dist/
 interface/.vite/
 serveur/tmp/
 donnees/
+sauvegardes/
 .idea/
 .vscode/
 *.local
