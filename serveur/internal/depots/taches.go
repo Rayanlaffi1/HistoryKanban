@@ -259,6 +259,44 @@ func (d *Depot) SupprimerImage(ctx context.Context, id string) error {
 	return erreur
 }
 
+func (d *Depot) NomColonne(ctx context.Context, colonne string) (string, error) {
+	var nom string
+	erreur := d.bd.QueryRow(ctx, `SELECT nom FROM colonnes WHERE id = $1`, colonne).Scan(&nom)
+	return nom, erreur
+}
+
+func (d *Depot) CreerActivite(ctx context.Context, tache, utilisateur, categorie, detail string) error {
+	_, erreur := d.bd.Exec(ctx,
+		`INSERT INTO activites (tache, utilisateur, type, detail) VALUES ($1, $2, $3, $4)`,
+		tache, utilisateur, categorie, detail)
+	return erreur
+}
+
+func (d *Depot) Activites(ctx context.Context, tache string) ([]modeles.Activite, error) {
+	lignes, erreur := d.bd.Query(ctx, `
+		SELECT a.id, a.tache, coalesce(a.utilisateur::text, ''), a.type, a.detail, a.creation,
+			coalesce(u.nom, ''), coalesce(u.prenom, '')
+		FROM activites a
+		LEFT JOIN utilisateurs u ON u.id = a.utilisateur
+		WHERE a.tache = $1
+		ORDER BY a.creation DESC
+		LIMIT 100`, tache)
+	if erreur != nil {
+		return nil, erreur
+	}
+	defer lignes.Close()
+	activites := []modeles.Activite{}
+	for lignes.Next() {
+		var activite modeles.Activite
+		if erreur := lignes.Scan(&activite.ID, &activite.Tache, &activite.Utilisateur, &activite.Type,
+			&activite.Detail, &activite.Creation, &activite.Nom, &activite.Prenom); erreur != nil {
+			return nil, erreur
+		}
+		activites = append(activites, activite)
+	}
+	return activites, lignes.Err()
+}
+
 func (d *Depot) Commentaires(ctx context.Context, tache string) ([]modeles.Commentaire, error) {
 	lignes, erreur := d.bd.Query(ctx, `
 		SELECT c.id, c.tache, c.auteur, c.contenu, c.creation, u.nom, u.prenom

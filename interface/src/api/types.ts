@@ -107,6 +107,17 @@ export const schemaCommentaire = z.object({
   prenom: z.string(),
 })
 
+export const schemaActivite = z.object({
+  id: z.string(),
+  tache: z.string(),
+  utilisateur: z.string(),
+  type: z.string(),
+  detail: z.string(),
+  creation: z.string(),
+  nom: z.string(),
+  prenom: z.string(),
+})
+
 export const schemaNotification = z.object({
   id: z.string(),
   utilisateur: z.string(),
@@ -146,6 +157,7 @@ export type Etiquette = z.infer<typeof schemaEtiquette>
 export type Image = z.infer<typeof schemaImage>
 export type Tache = z.infer<typeof schemaTache>
 export type Commentaire = z.infer<typeof schemaCommentaire>
+export type Activite = z.infer<typeof schemaActivite>
 export type Notification = z.infer<typeof schemaNotification>
 export type Preferences = z.infer<typeof schemaPreferences>
 export type DetailProjet = z.infer<typeof schemaDetailProjet>
@@ -177,4 +189,13 @@ export const typesNotifications: Record<string, string> = {
   "tache.commentee": "Commentaire",
   "tache.image.ajoutee": "Ajout d'image",
   "groupe.membre.ajoute": "Ajout à un groupe",
+}
+
+export const libellesActivites: Record<string, string> = {
+  "tache.creee": "a créé la tâche",
+  "tache.modifiee": "a modifié la tâche",
+  "tache.deplacee": "a déplacé la tâche",
+  "tache.commentee": "a commenté",
+  "tache.image.ajoutee": "a ajouté une image",
+  "tache.image.supprimee": "a supprimé une image",
 }

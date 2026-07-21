@@ -2,7 +2,9 @@ package distribution
 
 import (
 	"context"
+	"encoding/json"
 	"log"
+	"strings"
 	"time"
 
 	"historykanban/serveur/internal/courriels"
@@ -48,6 +50,7 @@ func (d *Distributeur) tempsreel(evenement evenements.Evenement) {
 			"donnees":   evenement.Donnees,
 		})
 	}
+	d.journaliser(contexte, evenement)
 	for _, destinataire := range evenement.Destinataires {
 		if destinataire == evenement.Acteur {
 			continue
@@ -65,6 +68,40 @@ func (d *Distributeur) tempsreel(evenement evenements.Evenement) {
 			"type":    "notification",
 			"donnees": notification,
 		})
+	}
+}
+
+func (d *Distributeur) journaliser(contexte context.Context, evenement evenements.Evenement) {
+	if !strings.HasPrefix(evenement.Type, "tache.") || evenement.Type == "tache.supprimee" {
+		return
+	}
+	var donnees struct {
+		ID      string `json:"id"`
+		Tache   string `json:"tache"`
+		Colonne string `json:"colonne"`
+		Nom     string `json:"nom"`
+	}
+	if erreur := json.Unmarshal(evenement.Donnees, &donnees); erreur != nil {
+		return
+	}
+	identifiant := donnees.Tache
+	if identifiant == "" {
+		identifiant = donnees.ID
+	}
+	if identifiant == "" {
+		return
+	}
+	detail := ""
+	switch evenement.Type {
+	case "tache.deplacee":
+		if nom, erreur := d.Depot.NomColonne(contexte, donnees.Colonne); erreur == nil {
+			detail = "vers « " + nom + " »"
+		}
+	case "tache.image.ajoutee":
+		detail = donnees.Nom
+	}
+	if erreur := d.Depot.CreerActivite(contexte, identifiant, evenement.Acteur, evenement.Type, detail); erreur != nil {
+		log.Printf("enregistrement d'activite impossible : %v", erreur)
 	}
 }
 

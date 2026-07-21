@@ -109,6 +109,17 @@ type Commentaire struct {
 	Prenom   string    `json:"prenom"`
 }
 
+type Activite struct {
+	ID          string    `json:"id"`
+	Tache       string    `json:"tache"`
+	Utilisateur string    `json:"utilisateur"`
+	Type        string    `json:"type"`
+	Detail      string    `json:"detail"`
+	Creation    time.Time `json:"creation"`
+	Nom         string    `json:"nom"`
+	Prenom      string    `json:"prenom"`
+}
+
 type Notification struct {
 	ID          string          `json:"id"`
 	Utilisateur string          `json:"utilisateur"`

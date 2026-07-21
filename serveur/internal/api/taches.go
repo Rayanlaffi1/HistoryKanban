@@ -189,6 +189,19 @@ func (s *Serveur) supprimerTache(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"etat": "supprime"})
 }
 
+func (s *Serveur) listerActivites(c *gin.Context) {
+	tache, _, autorise := s.tacheAutorisee(c, "lecteur")
+	if !autorise {
+		return
+	}
+	activites, erreur := s.Depot.Activites(c.Request.Context(), tache.ID)
+	if erreur != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"erreur": "lecture de l'activite impossible"})
+		return
+	}
+	c.JSON(http.StatusOK, activites)
+}
+
 func (s *Serveur) listerCommentaires(c *gin.Context) {
 	tache, _, autorise := s.tacheAutorisee(c, "lecteur")
 	if !autorise {

@@ -83,6 +83,7 @@ func (s *Serveur) Routeur() *gin.Engine {
 	api.PUT("/taches/:id", s.modifierTache)
 	api.DELETE("/taches/:id", s.supprimerTache)
 	api.PUT("/taches/:id/deplacer", s.deplacerTache)
+	api.GET("/taches/:id/activites", s.listerActivites)
 	api.GET("/taches/:id/commentaires", s.listerCommentaires)
 	api.POST("/taches/:id/commentaires", s.creerCommentaire)
 	api.DELETE("/commentaires/:id", s.supprimerCommentaire)

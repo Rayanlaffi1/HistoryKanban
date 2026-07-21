@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query"
 import { z } from "zod"
 import { client } from "@/api/client"
 import {
+  schemaActivite,
   schemaCommentaire,
   schemaDetailProjet,
   schemaGroupe,
@@ -76,6 +77,14 @@ export function utiliserCommentaires(tache: Ref<string>) {
   return useQuery({
     queryKey: computed(() => ["commentaires", tache.value]),
     queryFn: async () => z.array(schemaCommentaire).parse((await client.get(`/taches/${tache.value}/commentaires`)).data),
+    enabled: computed(() => tache.value !== ""),
+  })
+}
+
+export function utiliserActivites(tache: Ref<string>) {
+  return useQuery({
+    queryKey: computed(() => ["activites", tache.value]),
+    queryFn: async () => z.array(schemaActivite).parse((await client.get(`/taches/${tache.value}/activites`)).data),
     enabled: computed(() => tache.value !== ""),
   })
 }

@@ -109,6 +109,15 @@ CREATE TABLE IF NOT EXISTS commentaires (
     creation TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS activites (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tache UUID NOT NULL REFERENCES taches(id) ON DELETE CASCADE,
+    utilisateur UUID REFERENCES utilisateurs(id),
+    type TEXT NOT NULL,
+    detail TEXT NOT NULL DEFAULT '',
+    creation TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS notifications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     utilisateur UUID NOT NULL REFERENCES utilisateurs(id) ON DELETE CASCADE,
@@ -131,3 +140,4 @@ CREATE INDEX IF NOT EXISTS indextachesprojet ON taches(projet);
 CREATE INDEX IF NOT EXISTS indextachescolonne ON taches(colonne);
 CREATE INDEX IF NOT EXISTS indexnotificationsutilisateur ON notifications(utilisateur, lue);
 CREATE INDEX IF NOT EXISTS indexcommentairestache ON commentaires(tache);
+CREATE INDEX IF NOT EXISTS indexactivitestache ON activites(tache);

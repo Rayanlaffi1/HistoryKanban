@@ -3,6 +3,7 @@ defineProps<{
   ouvert: boolean
   titre: string
   large?: boolean
+  geant?: boolean
 }>()
 
 const emissions = defineEmits<{ fermer: [] }>()
@@ -17,7 +18,7 @@ const emissions = defineEmits<{ fermer: [] }>()
     >
       <div
         class="w-full rounded-xl border border-neutral-200 bg-white shadow-xl dark:border-neutral-800 dark:bg-neutral-900"
-        :class="large ? 'max-w-2xl' : 'max-w-md'"
+        :class="geant ? 'max-w-4xl' : large ? 'max-w-2xl' : 'max-w-md'"
       >
         <div class="flex items-center justify-between border-b border-neutral-200 px-6 py-4 dark:border-neutral-800">
           <h2 class="text-base font-semibold tracking-tight">{{ titre }}</h2>
