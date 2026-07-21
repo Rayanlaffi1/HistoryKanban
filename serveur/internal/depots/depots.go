@@ -79,3 +79,9 @@ func (d *Depot) ReclamerSession(ctx context.Context, utilisateur, session string
 	}
 	return false, false, nil
 }
+
+func (d *Depot) SupprimerSession(ctx context.Context, utilisateur, session string) error {
+	_, erreur := d.bd.Exec(ctx,
+		`DELETE FROM sessions WHERE utilisateur = $1 AND session = $2`, utilisateur, session)
+	return erreur
+}

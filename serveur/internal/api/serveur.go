@@ -44,6 +44,7 @@ func (s *Serveur) Routeur() *gin.Engine {
 	api := moteur.Group("/api", s.authentifier())
 
 	api.GET("/moi", s.moi)
+	api.GET("/presence", s.presence)
 	api.GET("/moi/preferences", s.obtenirPreferences)
 	api.PUT("/moi/preferences", s.enregistrerPreferences)
 

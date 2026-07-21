@@ -1,5 +1,7 @@
+import { ref } from "vue"
 import type { QueryClient } from "@tanstack/vue-query"
 import { useLocalStorage } from "@vueuse/core"
+import { client } from "@/api/client"
 import { jeton, seDeconnecter } from "@/securite/keycloak"
 import { utiliserMagasinNotifications } from "@/magasins/notifications"
 import { typesNotifications } from "@/api/types"
@@ -9,12 +11,24 @@ let actif = false
 const abonnements = new Set<string>()
 
 export const notifierDeplacement = useLocalStorage("historykanban.notifdeplacement", true)
+export const connectes = ref<string[]>([])
+
+async function chargerPresence() {
+  try {
+    const reponse = await client.get("/presence")
+    connectes.value = reponse.data.connectes ?? []
+  } catch {
+    connectes.value = []
+  }
+}
 
 interface MessageServeur {
   type: string
   projet?: string
   acteurnom?: string
   titre?: string
+  utilisateur?: string
+  etat?: string
   donnees?: any
 }
 
@@ -30,6 +44,7 @@ export function demarrerTempsReel(clientRequetes: QueryClient) {
       for (const projet of abonnements) {
         prise?.send(JSON.stringify({ action: "abonner", projet }))
       }
+      chargerPresence()
     }
     prise.onmessage = (evenement) => {
       let message: MessageServeur
@@ -41,6 +56,11 @@ export function demarrerTempsReel(clientRequetes: QueryClient) {
       if (message.type === "session.remplacee") {
         magasin.annoncer("Session terminée", "Une connexion a été ouverte sur un autre appareil.")
         setTimeout(() => seDeconnecter(), 1500)
+        return
+      }
+      if (message.type === "presence" && message.utilisateur) {
+        const sans = connectes.value.filter((identifiant) => identifiant !== message.utilisateur)
+        connectes.value = message.etat === "enligne" ? [...sans, message.utilisateur] : sans
         return
       }
       if (message.type === "notification") {

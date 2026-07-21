@@ -16,6 +16,7 @@ import {
 import { libellesRoles, roles } from "@/api/types"
 import { formulaireGroupe, formulaireMembre, formulaireProjet, valider } from "@/utilitaires/validation"
 import { extraireErreur } from "@/utilitaires/erreurs"
+import { connectes } from "@/tempsreel/prise"
 import Bouton from "@/composants/ui/Bouton.vue"
 import Champ from "@/composants/ui/Champ.vue"
 import ChampCouleur from "@/composants/ui/ChampCouleur.vue"
@@ -135,6 +136,10 @@ function modifierGroupe() {
 
 const confirmationSuppression = ref(false)
 
+const nbEnLigne = computed(
+  () => (membres.value ?? []).filter((membre) => connectes.value.includes(membre.utilisateur)).length,
+)
+
 function supprimerGroupe() {
   suppressionGroupe.mutate(identifiant.value, { onSuccess: () => routeur.push("/") })
 }
@@ -193,7 +198,12 @@ function quitterGroupe() {
 
       <section>
         <div class="flex items-center justify-between">
-          <h2 class="text-lg font-semibold">Membres</h2>
+          <h2 class="flex items-baseline gap-2 text-lg font-semibold">
+            Membres
+            <span class="text-xs font-normal text-neutral-500">
+              {{ nbEnLigne }} en ligne
+            </span>
+          </h2>
           <Bouton v-if="gestionnaire" taille="petite" variante="secondaire" @click="dialogueMembre = true">
             Ajouter
           </Bouton>
@@ -205,7 +215,14 @@ function quitterGroupe() {
             class="flex items-center justify-between gap-3 rounded-lg border border-neutral-200 bg-white px-3 py-2.5 dark:border-neutral-800 dark:bg-neutral-900"
           >
             <div class="flex min-w-0 items-center gap-3">
-              <Avatar :nom="membre.nom" :prenom="membre.prenom" />
+              <span class="relative inline-flex shrink-0">
+                <Avatar :nom="membre.nom" :prenom="membre.prenom" />
+                <span
+                  class="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white dark:border-neutral-900"
+                  :class="connectes.includes(membre.utilisateur) ? 'bg-green-500' : 'bg-neutral-400'"
+                  :title="connectes.includes(membre.utilisateur) ? 'En ligne' : 'Hors ligne'"
+                ></span>
+              </span>
               <div class="min-w-0">
                 <p class="truncate text-sm font-medium">{{ membre.prenom }} {{ membre.nom }}</p>
                 <p class="truncate text-xs text-neutral-500">{{ membre.courriel }}</p>
