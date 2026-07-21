@@ -59,6 +59,7 @@ watch(
     formulaire.echeance = versChampDate(proprietes.tache?.echeance)
     formulaire.affectations = [...(proprietes.tache?.affectations ?? [])]
     formulaire.etiquettes = [...(proprietes.tache?.etiquettes ?? [])]
+    viderEnAttente()
   },
   { immediate: true },
 )
@@ -79,6 +80,34 @@ const confirmationSuppression = ref(false)
 const champFichier = ref<HTMLInputElement | null>(null)
 const erreurs = ref<Record<string, string>>({})
 const erreurApi = ref("")
+
+interface FichierEnAttente {
+  fichier: File
+  url: string
+}
+
+const enAttente = ref<FichierEnAttente[]>([])
+
+function viderEnAttente() {
+  for (const element of enAttente.value) {
+    URL.revokeObjectURL(element.url)
+  }
+  enAttente.value = []
+}
+
+function selectionner(evenement: Event) {
+  const fichiers = (evenement.target as HTMLInputElement).files
+  if (!fichiers) return
+  for (const fichier of Array.from(fichiers)) {
+    enAttente.value.push({ fichier, url: URL.createObjectURL(fichier) })
+  }
+  ;(evenement.target as HTMLInputElement).value = ""
+}
+
+function retirerEnAttente(indice: number) {
+  URL.revokeObjectURL(enAttente.value[indice].url)
+  enAttente.value.splice(indice, 1)
+}
 
 function basculer(liste: string[], valeur: string) {
   const indice = liste.indexOf(valeur)
@@ -110,7 +139,26 @@ function enregistrer() {
       etiquettes: formulaire.etiquettes,
     },
     {
-      onSuccess: () => emissions("fermer"),
+      onSuccess: async (reponse) => {
+        if (!proprietes.tache && enAttente.value.length > 0) {
+          const identifiantCree = reponse.data?.id
+          if (identifiantCree) {
+            for (const element of enAttente.value) {
+              try {
+                await televersement.mutateAsync({
+                  tache: identifiantCree,
+                  projet: proprietes.projet,
+                  fichier: element.fichier,
+                })
+              } catch {
+                break
+              }
+            }
+          }
+          viderEnAttente()
+        }
+        emissions("fermer")
+      },
       onError: (erreur) => {
         erreurApi.value = extraireErreur(erreur)
       },
@@ -240,7 +288,27 @@ function commenter() {
         </div>
         <p v-else class="mt-2 text-xs text-neutral-500">Aucune image jointe.</p>
       </div>
-      <p v-else class="text-xs text-neutral-500">Les images pourront être ajoutées après la création.</p>
+      <div v-else>
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-medium text-neutral-700 dark:text-neutral-300">Images</span>
+          <label class="cursor-pointer text-xs text-neutral-500 hover:text-neutral-900 hover:underline dark:hover:text-neutral-100">
+            Ajouter des images
+            <input type="file" accept="image/*" multiple class="hidden" @change="selectionner" />
+          </label>
+        </div>
+        <div v-if="enAttente.length" class="mt-2 grid grid-cols-3 gap-2">
+          <div v-for="(element, indice) in enAttente" :key="element.url" class="group relative">
+            <img :src="element.url" :alt="element.fichier.name" class="h-24 w-full rounded-lg object-cover" />
+            <button
+              class="absolute right-1 top-1 hidden rounded-md bg-neutral-950/70 px-1.5 py-0.5 text-xs text-white group-hover:block"
+              @click="retirerEnAttente(indice)"
+            >
+              Retirer
+            </button>
+          </div>
+        </div>
+        <p v-else class="mt-2 text-xs text-neutral-500">Elles seront téléversées à la création de la tâche.</p>
+      </div>
 
       <div v-if="tache" class="border-t border-neutral-200 pt-4 dark:border-neutral-800">
         <span class="text-sm font-medium text-neutral-700 dark:text-neutral-300">Commentaires</span>

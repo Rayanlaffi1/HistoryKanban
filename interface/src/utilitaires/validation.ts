@@ -6,7 +6,7 @@ const nomCourt = (message: string, maximum = 100) =>
 const couleurHexadecimale = z.string().regex(/^#[0-9a-fA-F]{6}$/, "Couleur invalide")
 
 const entierFacultatif = (message: string) =>
-  z.string().refine((valeur) => {
+  z.union([z.string(), z.number()]).refine((valeur) => {
     if (valeur === "") return true
     const nombre = Number(valeur)
     return Number.isInteger(nombre) && nombre >= 0

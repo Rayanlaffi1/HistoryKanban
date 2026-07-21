@@ -6,12 +6,15 @@ import {
   utiliserDeplacementTache,
   utiliserDetailProjet,
   utiliserOrdreColonnes,
+  utiliserSuppressionColonne,
   utiliserTaches,
 } from "@/api/requetes"
 import type { Colonne, FiltreTaches, Tache } from "@/api/types"
 import { abonnerProjet, desabonnerProjet } from "@/tempsreel/prise"
 import Bouton from "@/composants/ui/Bouton.vue"
 import BoutonRetour from "@/composants/ui/BoutonRetour.vue"
+import Dialogue from "@/composants/ui/Dialogue.vue"
+import MenuContextuel, { type ElementMenu } from "@/composants/ui/MenuContextuel.vue"
 import ColonneKanban from "@/composants/kanban/ColonneKanban.vue"
 import FiltresTaches from "@/composants/kanban/FiltresTaches.vue"
 import DialogueTache from "@/composants/kanban/DialogueTache.vue"
@@ -113,6 +116,76 @@ function ouvrirColonne(colonne: Colonne | null) {
 }
 
 const dialogueReferentiels = ref(false)
+
+const suppressionColonne = utiliserSuppressionColonne()
+const colonneASupprimer = ref<Colonne | null>(null)
+
+const menu = ref<{ ouvert: boolean; x: number; y: number; colonne: Colonne | null }>({
+  ouvert: false,
+  x: 0,
+  y: 0,
+  colonne: null,
+})
+
+function ouvrirMenu(colonne: Colonne, evenement: MouseEvent) {
+  if (!edition.value) return
+  menu.value = { ouvert: true, x: evenement.clientX, y: evenement.clientY, colonne }
+}
+
+const elementsMenu = computed<ElementMenu[]>(() => {
+  if (!menu.value.colonne) return []
+  const indice = colonnesLocales.value.findIndex((colonne) => colonne.id === menu.value.colonne?.id)
+  const elements: ElementMenu[] = [{ id: "tache", libelle: "Nouvelle tâche" }]
+  if (gestion.value) {
+    elements.push({ id: "modifier", libelle: "Modifier la colonne" })
+    if (indice > 0) elements.push({ id: "gauche", libelle: "Déplacer à gauche" })
+    if (indice < colonnesLocales.value.length - 1) elements.push({ id: "droite", libelle: "Déplacer à droite" })
+    elements.push({ id: "supprimer", libelle: "Supprimer la colonne", danger: true })
+  }
+  return elements
+})
+
+function decalerColonne(direction: number) {
+  const colonne = menu.value.colonne
+  if (!colonne) return
+  const indice = colonnesLocales.value.findIndex((element) => element.id === colonne.id)
+  const cible = indice + direction
+  if (indice < 0 || cible < 0 || cible >= colonnesLocales.value.length) return
+  const copie = [...colonnesLocales.value]
+  ;[copie[indice], copie[cible]] = [copie[cible], copie[indice]]
+  colonnesLocales.value = copie
+  surOrdreColonnes()
+}
+
+function choisirMenu(action: string) {
+  const colonne = menu.value.colonne
+  if (!colonne) return
+  switch (action) {
+    case "tache":
+      ouvrirCreation(colonne.id)
+      break
+    case "modifier":
+      ouvrirColonne(colonne)
+      break
+    case "gauche":
+      decalerColonne(-1)
+      break
+    case "droite":
+      decalerColonne(1)
+      break
+    case "supprimer":
+      colonneASupprimer.value = colonne
+      break
+  }
+}
+
+function supprimerColonne() {
+  if (!colonneASupprimer.value) return
+  suppressionColonne.mutate(
+    { id: colonneASupprimer.value.id, projet: identifiant.value },
+    { onSuccess: () => (colonneASupprimer.value = null) },
+  )
+}
 </script>
 
 <template>
@@ -173,6 +246,7 @@ const dialogueReferentiels = ref(false)
           @ouvrir="ouvrirTache"
           @creer="ouvrirCreation(colonne.id)"
           @modifier="ouvrirColonne(colonne)"
+          @menu="ouvrirMenu(colonne, $event)"
         />
       </VueDraggable>
     </div>
@@ -204,5 +278,30 @@ const dialogueReferentiels = ref(false)
       :lots="detail?.lots ?? []"
       @fermer="dialogueReferentiels = false"
     />
+
+    <MenuContextuel
+      :ouvert="menu.ouvert"
+      :x="menu.x"
+      :y="menu.y"
+      :elements="elementsMenu"
+      @choisir="choisirMenu"
+      @fermer="menu.ouvert = false"
+    />
+
+    <Dialogue
+      :ouvert="colonneASupprimer !== null"
+      titre="Supprimer la colonne"
+      @fermer="colonneASupprimer = null"
+    >
+      <p class="text-sm text-neutral-600 dark:text-neutral-400">
+        La colonne « {{ colonneASupprimer?.nom }} » et toutes ses tâches seront supprimées définitivement.
+      </p>
+      <template #pied>
+        <Bouton variante="secondaire" @click="colonneASupprimer = null">Annuler</Bouton>
+        <Bouton variante="danger" :desactive="suppressionColonne.isPending.value" @click="supprimerColonne">
+          Supprimer
+        </Bouton>
+      </template>
+    </Dialogue>
   </div>
 </template>

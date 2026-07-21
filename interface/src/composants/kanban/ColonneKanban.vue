@@ -19,6 +19,7 @@ const emissions = defineEmits<{
   ouvrir: [Tache]
   creer: []
   modifier: []
+  menu: [MouseEvent]
 }>()
 
 const locales = ref<Tache[]>([])
@@ -42,6 +43,7 @@ function surChangement(evenement: { newIndex?: number }) {
 <template>
   <section
     class="flex w-72 shrink-0 flex-col rounded-xl border border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900"
+    @contextmenu.prevent="emissions('menu', $event)"
   >
     <header class="flex items-center justify-between gap-2 px-3 py-2.5">
       <div class="poignee flex min-w-0 items-center gap-2" :class="gestion && 'cursor-grab'">
