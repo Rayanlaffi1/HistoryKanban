@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue"
+import { computed, onBeforeUnmount, ref, watch } from "vue"
 import dayjs from "dayjs"
 import { utiliserProjets, utiliserStatistiques } from "@/api/requetes"
 import type { ParametresStatistiques } from "@/api/types"
+import { abonnerProjet, desabonnerProjet } from "@/tempsreel/prise"
 import Avatar from "@/composants/ui/Avatar.vue"
 import Selection from "@/composants/ui/Selection.vue"
 
@@ -12,6 +13,19 @@ const proprietes = defineProps<{
 
 const identifiant = computed(() => proprietes.groupe)
 const { data: projets } = utiliserProjets(identifiant)
+
+watch(
+  () => projets.value,
+  (nouveaux, anciens) => {
+    for (const projet of anciens ?? []) desabonnerProjet(projet.id)
+    for (const projet of nouveaux ?? []) abonnerProjet(projet.id)
+  },
+  { immediate: true },
+)
+
+onBeforeUnmount(() => {
+  for (const projet of projets.value ?? []) desabonnerProjet(projet.id)
+})
 
 type Periode = "7j" | "30j" | "90j" | "12m" | "libre"
 

@@ -82,8 +82,11 @@ export function demarrerTempsReel(clientRequetes: QueryClient) {
           clientRequetes.invalidateQueries({ queryKey: ["commentaires", message.donnees.tache] })
         }
         const cibleActivite = message.donnees?.tache ?? message.donnees?.id
-        if (message.type.startsWith("tache.") && cibleActivite) {
-          clientRequetes.invalidateQueries({ queryKey: ["activites", cibleActivite] })
+        if (message.type.startsWith("tache.")) {
+          if (cibleActivite) {
+            clientRequetes.invalidateQueries({ queryKey: ["activites", cibleActivite] })
+          }
+          clientRequetes.invalidateQueries({ queryKey: ["statistiques"] })
         }
         if (message.type === "tache.deplacee" && notifierDeplacement.value) {
           magasin.annoncer(
