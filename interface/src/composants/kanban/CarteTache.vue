@@ -16,9 +16,10 @@ const proprietes = defineProps<{
   membres: Record<string, Membre>
   lots: Record<string, Lot>
   densite: Densite
+  edition: boolean
 }>()
 
-defineEmits<{ ouvrir: [] }>()
+defineEmits<{ ouvrir: []; supprimer: [] }>()
 
 const lot = computed(() => (proprietes.tache.lot ? proprietes.lots[proprietes.tache.lot] : undefined))
 const affiches = computed(() => proprietes.tache.affectations.slice(0, 4))
@@ -62,10 +63,21 @@ const bordureUrgence = computed(() => {
 
   <article
     v-else
-    class="cursor-pointer rounded-lg border border-neutral-200 bg-white p-3 shadow-sm transition-shadow hover:shadow-md dark:border-neutral-700 dark:bg-neutral-800"
+    class="group/carte relative cursor-pointer rounded-lg border border-neutral-200 bg-white p-3 shadow-sm transition-shadow hover:shadow-md dark:border-neutral-700 dark:bg-neutral-800"
     :class="bordureUrgence"
     @click="$emit('ouvrir')"
   >
+    <button
+      v-if="edition"
+      class="absolute right-1 top-1 hidden rounded-md p-1 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-red-700 group-hover/carte:block dark:hover:bg-neutral-700 dark:hover:text-red-500"
+      title="Supprimer la tâche"
+      @click.stop="$emit('supprimer')"
+    >
+      <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M18 6 6 18M6 6l12 12" />
+      </svg>
+    </button>
+
     <template v-if="densite === 'defaut'">
       <img
         v-if="apercu"
@@ -89,7 +101,7 @@ const bordureUrgence = computed(() => {
       </div>
     </template>
 
-    <div class="flex items-start justify-between gap-2">
+    <div class="flex items-start justify-between gap-2" :class="edition ? 'pr-5' : ''">
       <h4 class="min-w-0 break-words text-sm font-medium leading-snug">{{ tache.titre }}</h4>
       <div class="flex shrink-0 items-center gap-1.5">
         <span

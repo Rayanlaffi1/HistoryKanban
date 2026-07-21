@@ -18,6 +18,7 @@ const proprietes = defineProps<{
 const emissions = defineEmits<{
   deplacer: [{ id: string; colonne: string; position: number }]
   ouvrir: [Tache]
+  supprimer: [Tache]
   creer: []
   modifier: []
   menu: [MouseEvent]
@@ -84,7 +85,9 @@ function surChangement(evenement: { newIndex?: number }) {
         :membres="membres"
         :lots="lots"
         :densite="densite"
+        :edition="edition"
         @ouvrir="emissions('ouvrir', tache)"
+        @supprimer="emissions('supprimer', tache)"
       />
     </VueDraggable>
 

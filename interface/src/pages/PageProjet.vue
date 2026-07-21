@@ -8,9 +8,11 @@ import {
   utiliserDetailProjet,
   utiliserOrdreColonnes,
   utiliserSuppressionColonne,
+  utiliserSuppressionTache,
   utiliserTaches,
 } from "@/api/requetes"
 import type { Colonne, FiltreTaches, Tache } from "@/api/types"
+import { utiliserMagasinNotifications } from "@/magasins/notifications"
 import { abonnerProjet, connectes, desabonnerProjet } from "@/tempsreel/prise"
 import Avatar from "@/composants/ui/Avatar.vue"
 import Bouton from "@/composants/ui/Bouton.vue"
@@ -35,6 +37,8 @@ const filtre = ref<FiltreTaches>({})
 const { data: taches } = utiliserTaches(identifiant, filtre)
 
 const deplacement = utiliserDeplacementTache()
+const suppressionTache = utiliserSuppressionTache()
+const magasinNotifications = utiliserMagasinNotifications()
 const ordreColonnes = utiliserOrdreColonnes()
 
 const edition = computed(() => ["proprietaire", "administrateur", "membre"].includes(detail.value?.role ?? ""))
@@ -105,6 +109,19 @@ function ouvrirTache(tache: Tache) {
   tacheOuverte.value = tache
   colonneInitiale.value = tache.colonne
   dialogueTache.value = true
+}
+
+function supprimerDepuisCarte(tache: Tache) {
+  suppressionTache.mutate(
+    { id: tache.id, projet: identifiant.value },
+    {
+      onSuccess: () =>
+        magasinNotifications.annoncer(
+          "Tâche supprimée",
+          `« ${tache.titre} » reste récupérable trente jours depuis la corbeille.`,
+        ),
+    },
+  )
 }
 
 watch(taches, (valeur) => {
@@ -304,6 +321,7 @@ function supprimerColonne() {
           :densite="densite"
           @deplacer="deplacer"
           @ouvrir="ouvrirTache"
+          @supprimer="supprimerDepuisCarte"
           @creer="ouvrirCreation(colonne.id)"
           @modifier="ouvrirColonne(colonne)"
           @menu="ouvrirMenu(colonne, $event)"
