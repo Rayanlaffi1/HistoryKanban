@@ -1,0 +1,150 @@
+name: historykanban
+
+services:
+  basededonnees:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${BDNOM}
+      POSTGRES_USER: ${BDUTILISATEUR}
+      POSTGRES_PASSWORD: ${BDMDP}
+    volumes:
+      - basededonnees:/var/lib/postgresql/data
+      - ./basededonnees/initialisation.sh:/docker-entrypoint-initdb.d/initialisation.sh
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${BDUTILISATEUR} -d ${BDNOM}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  keycloak:
+    build: ./keycloak
+    command: start-dev --import-realm --spi-theme-static-max-age=-1 --spi-theme-cache-themes=false
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAKADMIN}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAKADMINMDP}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://basededonnees:5432/keycloak
+      KC_DB_USERNAME: ${BDUTILISATEUR}
+      KC_DB_PASSWORD: ${BDMDP}
+      KC_HTTP_ENABLED: "true"
+      KC_HOSTNAME_STRICT: "false"
+    volumes:
+      - ./keycloak/royaume:/opt/keycloak/data/import
+      - ./keycloak/themes/historykanban:/opt/keycloak/themes/historykanban
+    ports:
+      - "8081:8080"
+    depends_on:
+      basededonnees:
+        condition: service_healthy
+
+  minio:
+    image: minio/minio:RELEASE.2024-06-13T22-53-53Z
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIOCLE}
+      MINIO_ROOT_PASSWORD: ${MINIOSECRET}
+    volumes:
+      - minio:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  creationseau:
+    image: minio/mc:RELEASE.2024-06-12T14-34-03Z
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 ${MINIOCLE} ${MINIOSECRET} &&
+      mc mb --ignore-existing local/images &&
+      mc anonymous set download local/images
+      "
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITUTILISATEUR}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMDP}
+    volumes:
+      - rabbitmq:/var/lib/rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  courriel:
+    image: mailhog/mailhog:v1.0.1
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+  serveur:
+    build: ./serveur
+    environment:
+      PORTSERVEUR: "8080"
+      BDURL: postgres://${BDUTILISATEUR}:${BDMDP}@basededonnees:5432/${BDNOM}?sslmode=disable
+      KEYCLOAKURL: http://keycloak:8080
+      KEYCLOAKURLPUBLIQUE: http://localhost:8081
+      KEYCLOAKROYAUME: historykanban
+      MINIOHOTE: minio:9000
+      MINIOHOTEPUBLIQUE: localhost:9000
+      MINIOCLE: ${MINIOCLE}
+      MINIOSECRET: ${MINIOSECRET}
+      MINIOSEAU: images
+      RABBITURL: amqp://${RABBITUTILISATEUR}:${RABBITMDP}@rabbitmq:5672/
+      SMTPHOTE: courriel
+      SMTPPORT: "1025"
+      SMTPEXPEDITEUR: notifications@historykanban.fr
+      ORIGINES: http://localhost:8090,http://localhost:5173
+    ports:
+      - "8080:8080"
+    depends_on:
+      basededonnees:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+      minio:
+        condition: service_healthy
+    restart: unless-stopped
+
+  interface:
+    build:
+      context: ./interface
+      args:
+        VITE_URLAPI: http://localhost:8080
+        VITE_URLWS: ws://localhost:8080
+        VITE_KEYCLOAKURL: http://localhost:8081
+        VITE_KEYCLOAKROYAUME: historykanban
+        VITE_KEYCLOAKCLIENT: interface
+    ports:
+      - "8090:80"
+    depends_on:
+      - serveur
+
+  jenkins:
+    image: jenkins/jenkins:lts-jdk17
+    volumes:
+      - jenkins:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "8082:8080"
+
+volumes:
+  basededonnees:
+  minio:
+  rabbitmq:
+  jenkins:
