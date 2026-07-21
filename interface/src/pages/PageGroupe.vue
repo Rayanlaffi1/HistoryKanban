@@ -176,8 +176,8 @@ function quitterGroupe() {
     <BoutonRetour vers="/" etiquette="Retour aux groupes" />
 
     <div class="mt-4 flex flex-wrap items-start justify-between gap-4">
-      <div>
-        <h1 class="text-2xl font-bold">{{ groupe?.nom }}</h1>
+      <div class="min-w-0">
+        <h1 class="truncate text-xl font-bold sm:text-2xl">{{ groupe?.nom }}</h1>
         <p class="mt-1 text-sm text-neutral-500">{{ groupe?.description }}</p>
       </div>
       <div class="flex gap-2">

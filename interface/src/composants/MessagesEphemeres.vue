@@ -5,7 +5,7 @@ const magasin = utiliserMagasinNotifications()
 </script>
 
 <template>
-  <div class="pointer-events-none fixed bottom-4 right-4 z-50 flex w-80 flex-col gap-2">
+  <div class="pointer-events-none fixed bottom-4 left-4 right-4 z-50 flex flex-col gap-2 sm:left-auto sm:w-80">
     <TransitionGroup
       enter-active-class="transition duration-200"
       enter-from-class="translate-y-2 opacity-0"

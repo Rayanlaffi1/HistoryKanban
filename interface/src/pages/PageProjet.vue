@@ -200,21 +200,21 @@ function supprimerColonne() {
 
 <template>
   <div class="flex h-[calc(100vh-3.5rem)] flex-col">
-    <div class="border-b border-neutral-200 bg-white px-4 py-4 dark:border-neutral-800 dark:bg-neutral-950">
+    <div class="border-b border-neutral-200 bg-white px-3 py-3 dark:border-neutral-800 dark:bg-neutral-950 sm:px-4 sm:py-4">
       <div class="mx-auto max-w-full">
         <div class="flex flex-wrap items-center justify-between gap-3">
-          <div class="flex items-center gap-3">
+          <div class="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
             <BoutonRetour v-if="detail" :vers="`/groupes/${detail.projet.groupe}`" etiquette="Groupe" />
             <span
               v-if="detail"
-              class="h-3 w-3 rounded-full"
+              class="h-3 w-3 shrink-0 rounded-full"
               :style="{ backgroundColor: detail.projet.couleur }"
             ></span>
-            <h1 class="text-lg font-bold">{{ detail?.projet.nom }}</h1>
-            <span class="text-sm text-neutral-500">{{ taches?.length ?? 0 }} tâches · {{ totalPoints }} points</span>
+            <h1 class="truncate text-base font-bold sm:text-lg">{{ detail?.projet.nom }}</h1>
+            <span class="text-xs text-neutral-500 sm:text-sm">{{ taches?.length ?? 0 }} tâches · {{ totalPoints }} points</span>
           </div>
-          <div class="flex items-center gap-3">
-            <div class="flex -space-x-1.5">
+          <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+            <div class="hidden -space-x-1.5 sm:flex">
               <span
                 v-for="membre in (detail?.membres ?? []).slice(0, 8)"
                 :key="membre.utilisateur"
@@ -262,7 +262,7 @@ function supprimerColonne() {
       </div>
     </div>
 
-    <div class="flex-1 overflow-x-auto overflow-y-hidden p-4">
+    <div class="flex-1 overflow-x-auto overflow-y-hidden p-3 sm:p-4">
       <VueDraggable
         v-model="colonnesLocales"
         :animation="150"

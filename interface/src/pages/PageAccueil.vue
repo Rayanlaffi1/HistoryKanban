@@ -39,9 +39,9 @@ function creer() {
 
 <template>
   <div class="mx-auto max-w-7xl px-4 py-8">
-    <div class="flex items-center justify-between">
+    <div class="flex flex-wrap items-center justify-between gap-3">
       <div>
-        <h1 class="text-2xl font-bold">Mes groupes</h1>
+        <h1 class="text-xl font-bold sm:text-2xl">Mes groupes</h1>
         <p class="mt-1 text-sm text-neutral-500">Retrouvez vos équipes et leurs projets kanban.</p>
       </div>
       <Bouton @click="dialogueOuvert = true">Nouveau groupe</Bouton>

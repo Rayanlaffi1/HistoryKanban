@@ -289,7 +289,7 @@ function supprimer() {
 
         <div v-if="tache.images.length">
           <span class="text-sm font-medium text-neutral-700 dark:text-neutral-300">Images</span>
-          <div class="mt-2 grid grid-cols-3 gap-2">
+          <div class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
             <a v-for="image in tache.images" :key="image.id" :href="image.url" target="_blank" rel="noopener">
               <img :src="image.url" :alt="image.nom" class="h-24 w-full rounded-lg object-cover" />
             </a>
@@ -367,7 +367,7 @@ function supprimer() {
 
         <SectionFormulaire titre="Images">
           <template v-if="tache">
-            <div v-if="tache.images.length" class="grid grid-cols-3 gap-2">
+            <div v-if="tache.images.length" class="grid grid-cols-2 gap-2 sm:grid-cols-3">
               <div v-for="image in tache.images" :key="image.id" class="group relative">
                 <a :href="image.url" target="_blank" rel="noopener">
                   <img :src="image.url" :alt="image.nom" class="h-24 w-full rounded-lg object-cover" />
@@ -389,7 +389,7 @@ function supprimer() {
             </label>
           </template>
           <template v-else>
-            <div v-if="enAttente.length" class="grid grid-cols-3 gap-2">
+            <div v-if="enAttente.length" class="grid grid-cols-2 gap-2 sm:grid-cols-3">
               <div v-for="(element, indice) in enAttente" :key="element.url" class="group relative">
                 <img :src="element.url" :alt="element.fichier.name" class="h-24 w-full rounded-lg object-cover" />
                 <button

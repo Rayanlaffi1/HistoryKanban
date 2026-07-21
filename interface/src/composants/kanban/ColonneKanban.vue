@@ -43,7 +43,7 @@ function surChangement(evenement: { newIndex?: number }) {
 
 <template>
   <section
-    class="flex w-72 shrink-0 flex-col rounded-xl border border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900"
+    class="flex w-[17rem] shrink-0 flex-col rounded-xl border border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900 sm:w-72"
     @contextmenu.prevent="emissions('menu', $event)"
   >
     <header class="flex items-center justify-between gap-2 px-3 py-2.5">

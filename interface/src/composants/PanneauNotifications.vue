@@ -12,7 +12,7 @@ const lectureTotale = utiliserLectureTotale()
 
 <template>
   <div
-    class="absolute right-0 top-full mt-2 w-80 overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-lg dark:border-neutral-800 dark:bg-neutral-900"
+    class="fixed inset-x-3 top-14 z-50 overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-lg dark:border-neutral-800 dark:bg-neutral-900 sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-80"
   >
     <div class="flex items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
       <span class="text-sm font-semibold">Notifications</span>

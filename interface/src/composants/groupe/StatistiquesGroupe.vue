@@ -116,14 +116,14 @@ const classeChampDate =
             <input v-model="parametres.fin" type="date" :class="classeChampDate" />
           </label>
         </template>
-        <div class="w-36">
+        <div class="w-full sm:w-36">
           <Selection v-model="parametres.granularite" etiquette="Granularité">
             <option value="jour">Par jour</option>
             <option value="semaine">Par semaine</option>
             <option value="mois">Par mois</option>
           </Selection>
         </div>
-        <div class="w-48">
+        <div class="w-full sm:w-48">
           <Selection v-model="parametres.projet" etiquette="Projet">
             <option value="">Tous les projets</option>
             <option v-for="projet in projets" :key="projet.id" :value="projet.id">{{ projet.nom }}</option>

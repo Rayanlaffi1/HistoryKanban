@@ -23,27 +23,27 @@ onClickOutside(zonePanneau, () => (panneauOuvert.value = false))
   <header
     class="sticky top-0 z-40 border-b border-neutral-200 bg-white/90 backdrop-blur dark:border-neutral-800 dark:bg-neutral-950/90"
   >
-    <div class="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
-      <div class="flex items-center gap-6">
-        <RouterLink to="/" class="text-lg font-bold tracking-tight">HistoryKanban</RouterLink>
-        <nav class="flex items-center gap-1 text-sm">
+    <div class="mx-auto flex h-14 max-w-7xl items-center justify-between gap-2 px-3 sm:px-4">
+      <div class="flex min-w-0 items-center gap-2 sm:gap-6">
+        <RouterLink to="/" class="shrink-0 text-base font-bold tracking-tight sm:text-lg">HistoryKanban</RouterLink>
+        <nav class="flex items-center gap-0.5 text-sm sm:gap-1">
           <RouterLink
             to="/"
-            class="rounded-md px-3 py-1.5 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
+            class="rounded-md px-2 py-1.5 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100 sm:px-3"
             active-class="bg-neutral-100 !text-neutral-900 dark:bg-neutral-800 dark:!text-neutral-100"
           >
             Accueil
           </RouterLink>
           <RouterLink
             to="/parametres"
-            class="rounded-md px-3 py-1.5 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
+            class="rounded-md px-2 py-1.5 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100 sm:px-3"
             active-class="bg-neutral-100 !text-neutral-900 dark:bg-neutral-800 dark:!text-neutral-100"
           >
             Paramètres
           </RouterLink>
         </nav>
       </div>
-      <div class="flex items-center gap-2">
+      <div class="flex shrink-0 items-center gap-1 sm:gap-2">
         <button
           class="rounded-md p-2 text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
           :title="sombre ? 'Mode clair' : 'Mode sombre'"
@@ -76,10 +76,10 @@ onClickOutside(zonePanneau, () => (panneauOuvert.value = false))
           </button>
           <PanneauNotifications v-if="panneauOuvert" @fermer="panneauOuvert = false" />
         </div>
-        <div class="ml-2 flex items-center gap-3">
-          <Avatar v-if="profil" :nom="profil.nom" :prenom="profil.prenom" />
+        <div class="ml-1 flex items-center gap-2 sm:ml-2 sm:gap-3">
+          <Avatar v-if="profil" class="hidden sm:inline-flex" :nom="profil.nom" :prenom="profil.prenom" />
           <button
-            class="text-sm text-neutral-600 hover:text-neutral-900 hover:underline dark:text-neutral-400 dark:hover:text-neutral-100"
+            class="text-xs text-neutral-600 hover:text-neutral-900 hover:underline dark:text-neutral-400 dark:hover:text-neutral-100 sm:text-sm"
             @click="seDeconnecter()"
           >
             Déconnexion

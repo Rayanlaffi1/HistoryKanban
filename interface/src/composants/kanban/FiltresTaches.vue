@@ -47,7 +47,7 @@ const classeChamp =
       type="search"
       placeholder="Rechercher…"
       :class="classeChamp"
-      class="w-44"
+      class="w-full sm:w-44"
       @input="changer('texte', ($event.target as HTMLInputElement).value)"
     />
     <select :value="filtre.membre ?? ''" :class="classeChamp" @change="changer('membre', ($event.target as HTMLSelectElement).value)">
