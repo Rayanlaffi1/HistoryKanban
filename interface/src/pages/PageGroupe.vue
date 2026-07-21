@@ -140,6 +140,17 @@ const nbEnLigne = computed(
   () => (membres.value ?? []).filter((membre) => connectes.value.includes(membre.utilisateur)).length,
 )
 
+const rolesOrdonnes = ["lecteur", "membre", "administrateur", "proprietaire"]
+
+const droitsRoles = [
+  { libelle: "Consulter les projets, les tâches et les commentaires", niveaux: ["lecteur", "membre", "administrateur", "proprietaire"] },
+  { libelle: "Créer et modifier des tâches, commenter, joindre des images", niveaux: ["membre", "administrateur", "proprietaire"] },
+  { libelle: "Créer des projets, gérer les étiquettes et les lots", niveaux: ["membre", "administrateur", "proprietaire"] },
+  { libelle: "Gérer les colonnes, modifier ou supprimer un projet", niveaux: ["administrateur", "proprietaire"] },
+  { libelle: "Modifier le groupe, ajouter et retirer des membres", niveaux: ["administrateur", "proprietaire"] },
+  { libelle: "Attribuer les rôles et supprimer le groupe", niveaux: ["proprietaire"] },
+]
+
 function supprimerGroupe() {
   suppressionGroupe.mutate(identifiant.value, { onSuccess: () => routeur.push("/") })
 }
@@ -169,8 +180,8 @@ function quitterGroupe() {
       </div>
     </div>
 
-    <div class="mt-8 grid gap-8 lg:grid-cols-3">
-      <section class="lg:col-span-2">
+    <div class="mt-8 grid gap-6 lg:grid-cols-3">
+      <section class="rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900 lg:col-span-2">
         <div class="flex items-center justify-between">
           <h2 class="text-lg font-semibold">Projets</h2>
           <Bouton v-if="monRole !== 'lecteur'" taille="petite" @click="dialogueProjet = true">Nouveau projet</Bouton>
@@ -180,7 +191,7 @@ function quitterGroupe() {
             v-for="projet in projets"
             :key="projet.id"
             :to="`/projets/${projet.id}`"
-            class="group rounded-xl border border-neutral-200 bg-white p-5 transition-shadow hover:shadow-md dark:border-neutral-800 dark:bg-neutral-900"
+            class="group rounded-xl border border-neutral-200 bg-neutral-50 p-5 transition-shadow hover:shadow-md dark:border-neutral-700 dark:bg-neutral-800/50"
           >
             <div class="flex items-center gap-2">
               <span class="h-3 w-3 rounded-full" :style="{ backgroundColor: projet.couleur }"></span>
@@ -196,7 +207,7 @@ function quitterGroupe() {
         </p>
       </section>
 
-      <section>
+      <section class="rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900">
         <div class="flex items-center justify-between">
           <h2 class="flex items-baseline gap-2 text-lg font-semibold">
             Membres
@@ -212,7 +223,7 @@ function quitterGroupe() {
           <li
             v-for="membre in membres"
             :key="membre.utilisateur"
-            class="flex items-center justify-between gap-3 rounded-lg border border-neutral-200 bg-white px-3 py-2.5 dark:border-neutral-800 dark:bg-neutral-900"
+            class="flex items-center justify-between gap-3 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5 dark:border-neutral-700 dark:bg-neutral-800/50"
           >
             <div class="flex min-w-0 items-center gap-3">
               <span class="relative inline-flex shrink-0">
@@ -256,6 +267,48 @@ function quitterGroupe() {
         </ul>
       </section>
     </div>
+
+    <section class="mt-6 rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900">
+      <h2 class="text-lg font-semibold">Fonctionnalités par rôle</h2>
+      <p class="mt-1 text-sm text-neutral-500">
+        Votre rôle dans ce groupe : <span class="font-medium text-neutral-900 dark:text-neutral-100">{{ libellesRoles[monRole] ?? monRole }}</span>
+      </p>
+      <div class="mt-4 overflow-x-auto">
+        <table class="w-full min-w-[40rem] border-collapse text-sm">
+          <thead>
+            <tr class="border-b border-neutral-200 dark:border-neutral-800">
+              <th class="py-2 pr-4 text-left font-medium text-neutral-500">Fonctionnalité</th>
+              <th
+                v-for="role in rolesOrdonnes"
+                :key="role"
+                class="px-3 py-2 text-center font-medium"
+                :class="role === monRole ? 'rounded-t-lg bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100' : 'text-neutral-500'"
+              >
+                {{ libellesRoles[role] }}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="droit in droitsRoles"
+              :key="droit.libelle"
+              class="border-b border-neutral-100 last:border-0 dark:border-neutral-800/60"
+            >
+              <td class="py-2.5 pr-4 text-neutral-700 dark:text-neutral-300">{{ droit.libelle }}</td>
+              <td
+                v-for="role in rolesOrdonnes"
+                :key="role"
+                class="px-3 py-2.5 text-center"
+                :class="role === monRole && 'bg-neutral-100 dark:bg-neutral-800'"
+              >
+                <span v-if="droit.niveaux.includes(role)" class="font-semibold text-green-600 dark:text-green-500">✓</span>
+                <span v-else class="text-neutral-300 dark:text-neutral-600">—</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
 
     <Dialogue :ouvert="dialogueMembre" titre="Ajouter un membre" @fermer="dialogueMembre = false">
       <form class="space-y-4" @submit.prevent="ajouterMembre">
