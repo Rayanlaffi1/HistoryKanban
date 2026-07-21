@@ -4,6 +4,7 @@ import type { Etiquette, Lot, Membre, Tache } from "@/api/types"
 import { couleursUrgences, libellesUrgences } from "@/api/types"
 import { estDepassee, formaterDate, formaterDateHeure } from "@/utilitaires/dates"
 import { texteBrut } from "@/utilitaires/html"
+import { estImage } from "@/utilitaires/fichiers"
 import Avatar from "@/composants/ui/Avatar.vue"
 import Badge from "@/composants/ui/Badge.vue"
 
@@ -21,8 +22,9 @@ defineEmits<{ ouvrir: [] }>()
 
 const lot = computed(() => (proprietes.tache.lot ? proprietes.lots[proprietes.tache.lot] : undefined))
 const affiches = computed(() => proprietes.tache.affectations.slice(0, 4))
-const apercu = computed(() => proprietes.tache.images[0])
-const galerie = computed(() => proprietes.tache.images.slice(0, 3))
+const visuels = computed(() => proprietes.tache.images.filter((image) => estImage(image.typecontenu)))
+const apercu = computed(() => visuels.value[0])
+const galerie = computed(() => visuels.value.slice(0, 3))
 const resume = computed(() => texteBrut(proprietes.tache.description))
 const urgente = computed(() => proprietes.tache.urgence !== "normale")
 const bordureUrgence = computed(() => {
@@ -129,7 +131,7 @@ const bordureUrgence = computed(() => {
     </div>
 
     <p v-if="densite === 'detaillee'" class="mt-2 border-t border-neutral-100 pt-1.5 text-[11px] text-neutral-400 dark:border-neutral-700">
-      Créée le {{ formaterDate(tache.creation) }} · {{ tache.images.length }} image{{ tache.images.length > 1 ? "s" : "" }}
+      Créée le {{ formaterDate(tache.creation) }} · {{ tache.images.length }} pièce{{ tache.images.length > 1 ? "s" : "" }} jointe{{ tache.images.length > 1 ? "s" : "" }}
     </p>
   </article>
 </template>

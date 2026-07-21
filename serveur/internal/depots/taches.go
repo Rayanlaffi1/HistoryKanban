@@ -81,7 +81,7 @@ func (d *Depot) Taches(ctx context.Context, projet string, filtre modeles.Filtre
 
 func (d *Depot) attacherImages(ctx context.Context, projet string, taches []modeles.Tache) ([]modeles.Tache, error) {
 	lignes, erreur := d.bd.Query(ctx, `
-		SELECT i.id, i.tache, i.chemin, i.nom, i.taille, i.creation
+		SELECT i.id, i.tache, i.chemin, i.nom, i.taille, i.typecontenu, i.creation
 		FROM images i JOIN taches t ON t.id = i.tache
 		WHERE t.projet = $1 ORDER BY i.creation`, projet)
 	if erreur != nil {
@@ -91,7 +91,8 @@ func (d *Depot) attacherImages(ctx context.Context, projet string, taches []mode
 	parTache := map[string][]modeles.Image{}
 	for lignes.Next() {
 		var image modeles.Image
-		if erreur := lignes.Scan(&image.ID, &image.Tache, &image.Chemin, &image.Nom, &image.Taille, &image.Creation); erreur != nil {
+		if erreur := lignes.Scan(&image.ID, &image.Tache, &image.Chemin, &image.Nom, &image.Taille,
+			&image.TypeContenu, &image.Creation); erreur != nil {
 			return nil, erreur
 		}
 		parTache[image.Tache] = append(parTache[image.Tache], image)
@@ -118,14 +119,15 @@ func (d *Depot) Tache(ctx context.Context, id string) (*modeles.Tache, error) {
 	}
 	tache.Images = []modeles.Image{}
 	lignes, erreur := d.bd.Query(ctx,
-		`SELECT id, tache, chemin, nom, taille, creation FROM images WHERE tache = $1 ORDER BY creation`, id)
+		`SELECT id, tache, chemin, nom, taille, typecontenu, creation FROM images WHERE tache = $1 ORDER BY creation`, id)
 	if erreur != nil {
 		return nil, erreur
 	}
 	defer lignes.Close()
 	for lignes.Next() {
 		var image modeles.Image
-		if erreur := lignes.Scan(&image.ID, &image.Tache, &image.Chemin, &image.Nom, &image.Taille, &image.Creation); erreur != nil {
+		if erreur := lignes.Scan(&image.ID, &image.Tache, &image.Chemin, &image.Nom, &image.Taille,
+			&image.TypeContenu, &image.Creation); erreur != nil {
 			return nil, erreur
 		}
 		tache.Images = append(tache.Images, image)
@@ -289,10 +291,10 @@ func (d *Depot) ProjetTache(ctx context.Context, tache string) (string, error) {
 
 func (d *Depot) AjouterImage(ctx context.Context, image modeles.Image) (*modeles.Image, error) {
 	erreur := d.bd.QueryRow(ctx, `
-		INSERT INTO images (tache, chemin, nom, taille) VALUES ($1, $2, $3, $4)
-		RETURNING id, tache, chemin, nom, taille, creation`,
-		image.Tache, image.Chemin, image.Nom, image.Taille).
-		Scan(&image.ID, &image.Tache, &image.Chemin, &image.Nom, &image.Taille, &image.Creation)
+		INSERT INTO images (tache, chemin, nom, taille, typecontenu) VALUES ($1, $2, $3, $4, $5)
+		RETURNING id, tache, chemin, nom, taille, typecontenu, creation`,
+		image.Tache, image.Chemin, image.Nom, image.Taille, image.TypeContenu).
+		Scan(&image.ID, &image.Tache, &image.Chemin, &image.Nom, &image.Taille, &image.TypeContenu, &image.Creation)
 	if erreur != nil {
 		return nil, erreur
 	}
@@ -302,8 +304,8 @@ func (d *Depot) AjouterImage(ctx context.Context, image modeles.Image) (*modeles
 func (d *Depot) Image(ctx context.Context, id string) (*modeles.Image, error) {
 	var image modeles.Image
 	erreur := d.bd.QueryRow(ctx,
-		`SELECT id, tache, chemin, nom, taille, creation FROM images WHERE id = $1`, id).
-		Scan(&image.ID, &image.Tache, &image.Chemin, &image.Nom, &image.Taille, &image.Creation)
+		`SELECT id, tache, chemin, nom, taille, typecontenu, creation FROM images WHERE id = $1`, id).
+		Scan(&image.ID, &image.Tache, &image.Chemin, &image.Nom, &image.Taille, &image.TypeContenu, &image.Creation)
 	if erreur != nil {
 		return nil, erreur
 	}

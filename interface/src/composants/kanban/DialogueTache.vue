@@ -13,6 +13,7 @@ import { depuisChampDate, formaterDateHeure, versChampDate } from "@/utilitaires
 import { formulaireTache, valider } from "@/utilitaires/validation"
 import { extraireErreur } from "@/utilitaires/erreurs"
 import { assainir } from "@/utilitaires/html"
+import { typesAcceptes } from "@/utilitaires/fichiers"
 import Bouton from "@/composants/ui/Bouton.vue"
 import Champ from "@/composants/ui/Champ.vue"
 const ZoneRiche = defineAsyncComponent(() => import("@/composants/ui/ZoneRiche.vue"))
@@ -21,6 +22,7 @@ import Dialogue from "@/composants/ui/Dialogue.vue"
 import Avatar from "@/composants/ui/Avatar.vue"
 import Badge from "@/composants/ui/Badge.vue"
 import SectionFormulaire from "@/composants/ui/SectionFormulaire.vue"
+import PieceJointe from "@/composants/kanban/PieceJointe.vue"
 import CommentairesTache from "@/composants/kanban/CommentairesTache.vue"
 import ActiviteTache from "@/composants/kanban/ActiviteTache.vue"
 
@@ -321,11 +323,16 @@ function supprimer() {
         </div>
 
         <div v-if="tache.images.length">
-          <span class="text-sm font-medium text-neutral-700 dark:text-neutral-300">Images</span>
+          <span class="text-sm font-medium text-neutral-700 dark:text-neutral-300">Pièces jointes</span>
           <div class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
-            <a v-for="image in tache.images" :key="image.id" :href="image.url" target="_blank" rel="noopener">
-              <img :src="image.url" :alt="image.nom" class="h-24 w-full rounded-lg object-cover" />
-            </a>
+            <PieceJointe
+              v-for="image in tache.images"
+              :key="image.id"
+              :nom="image.nom"
+              :taille="image.taille"
+              :typecontenu="image.typecontenu"
+              :url="image.url"
+            />
           </div>
         </div>
       </div>
@@ -402,13 +409,16 @@ function supprimer() {
           </div>
         </SectionFormulaire>
 
-        <SectionFormulaire titre="Images">
+        <SectionFormulaire titre="Pièces jointes">
           <template v-if="tache">
             <div v-if="tache.images.length" class="grid grid-cols-2 gap-2 sm:grid-cols-3">
               <div v-for="image in tache.images" :key="image.id" class="group relative">
-                <a :href="image.url" target="_blank" rel="noopener">
-                  <img :src="image.url" :alt="image.nom" class="h-24 w-full rounded-lg object-cover" />
-                </a>
+                <PieceJointe
+                  :nom="image.nom"
+                  :taille="image.taille"
+                  :typecontenu="image.typecontenu"
+                  :url="image.url"
+                />
                 <button
                   class="absolute right-1 top-1 hidden rounded-md bg-neutral-950/70 px-1.5 py-0.5 text-xs text-white group-hover:block"
                   @click="suppressionImage.mutate({ id: image.id, projet })"
@@ -417,18 +427,23 @@ function supprimer() {
                 </button>
               </div>
             </div>
-            <p v-else class="text-xs text-neutral-500">Aucune image jointe.</p>
+            <p v-else class="text-xs text-neutral-500">Aucune pièce jointe.</p>
             <label
               class="inline-flex h-9 cursor-pointer items-center rounded-lg border border-dashed border-neutral-300 px-3 text-xs font-medium text-neutral-600 transition-colors hover:border-neutral-500 hover:text-neutral-900 dark:border-neutral-600 dark:text-neutral-400 dark:hover:border-neutral-400 dark:hover:text-neutral-100"
             >
-              + Ajouter une image
-              <input ref="champFichier" type="file" accept="image/*" class="hidden" @change="televerser" />
+              + Ajouter un fichier
+              <input ref="champFichier" type="file" :accept="typesAcceptes" class="hidden" @change="televerser" />
             </label>
           </template>
           <template v-else>
             <div v-if="enAttente.length" class="grid grid-cols-2 gap-2 sm:grid-cols-3">
               <div v-for="(element, indice) in enAttente" :key="element.url" class="group relative">
-                <img :src="element.url" :alt="element.fichier.name" class="h-24 w-full rounded-lg object-cover" />
+                <PieceJointe
+                  :nom="element.fichier.name"
+                  :taille="element.fichier.size"
+                  :typecontenu="element.fichier.type"
+                  :url="element.url"
+                />
                 <button
                   class="absolute right-1 top-1 hidden rounded-md bg-neutral-950/70 px-1.5 py-0.5 text-xs text-white group-hover:block"
                   @click="retirerEnAttente(indice)"
@@ -441,8 +456,8 @@ function supprimer() {
             <label
               class="inline-flex h-9 cursor-pointer items-center rounded-lg border border-dashed border-neutral-300 px-3 text-xs font-medium text-neutral-600 transition-colors hover:border-neutral-500 hover:text-neutral-900 dark:border-neutral-600 dark:text-neutral-400 dark:hover:border-neutral-400 dark:hover:text-neutral-100"
             >
-              + Ajouter des images
-              <input type="file" accept="image/*" multiple class="hidden" @change="selectionner" />
+              + Ajouter des fichiers
+              <input type="file" :accept="typesAcceptes" multiple class="hidden" @change="selectionner" />
             </label>
           </template>
         </SectionFormulaire>

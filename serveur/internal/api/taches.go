@@ -292,10 +292,26 @@ func (s *Serveur) supprimerCommentaire(c *gin.Context) {
 }
 
 var extensionsAutorisees = map[string]bool{
-	"image/png":  true,
-	"image/jpeg": true,
-	"image/gif":  true,
-	"image/webp": true,
+	"image/png":                   true,
+	"image/jpeg":                  true,
+	"image/gif":                   true,
+	"image/webp":                  true,
+	"application/pdf":             true,
+	"text/plain":                  true,
+	"text/csv":                    true,
+	"text/markdown":               true,
+	"application/json":            true,
+	"application/zip":             true,
+	"application/x-7z-compressed": true,
+	"application/vnd.rar":         true,
+	"application/gzip":            true,
+	"application/msword":          true,
+	"application/vnd.ms-excel":    true,
+	"application/vnd.openxmlformats-officedocument.wordprocessingml.document":   true,
+	"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":         true,
+	"application/vnd.openxmlformats-officedocument.presentationml.presentation": true,
+	"application/vnd.oasis.opendocument.text":                                   true,
+	"application/vnd.oasis.opendocument.spreadsheet":                            true,
 }
 
 func (s *Serveur) televerserImage(c *gin.Context) {
@@ -314,7 +330,7 @@ func (s *Serveur) televerserImage(c *gin.Context) {
 	}
 	typeContenu := fichier.Header.Get("Content-Type")
 	if !extensionsAutorisees[typeContenu] {
-		c.JSON(http.StatusBadRequest, gin.H{"erreur": "format d'image non pris en charge"})
+		c.JSON(http.StatusBadRequest, gin.H{"erreur": "format de fichier non pris en charge"})
 		return
 	}
 	contenu, erreur := fichier.Open()
@@ -329,10 +345,11 @@ func (s *Serveur) televerserImage(c *gin.Context) {
 		return
 	}
 	image, erreur := s.Depot.AjouterImage(c.Request.Context(), modeles.Image{
-		Tache:  tache.ID,
-		Chemin: chemin,
-		Nom:    fichier.Filename,
-		Taille: fichier.Size,
+		Tache:       tache.ID,
+		Chemin:      chemin,
+		Nom:         fichier.Filename,
+		Taille:      fichier.Size,
+		TypeContenu: typeContenu,
 	})
 	if erreur != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"erreur": "enregistrement de l'image impossible"})

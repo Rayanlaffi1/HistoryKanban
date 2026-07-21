@@ -74,13 +74,14 @@ type Etiquette struct {
 }
 
 type Image struct {
-	ID       string    `json:"id"`
-	Tache    string    `json:"tache"`
-	Chemin   string    `json:"chemin"`
-	Nom      string    `json:"nom"`
-	Taille   int64     `json:"taille"`
-	URL      string    `json:"url"`
-	Creation time.Time `json:"creation"`
+	ID          string    `json:"id"`
+	Tache       string    `json:"tache"`
+	Chemin      string    `json:"chemin"`
+	Nom         string    `json:"nom"`
+	Taille      int64     `json:"taille"`
+	TypeContenu string    `json:"typecontenu"`
+	URL         string    `json:"url"`
+	Creation    time.Time `json:"creation"`
 }
 
 type Tache struct {

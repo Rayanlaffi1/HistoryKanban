@@ -78,6 +78,7 @@ export const schemaImage = z.object({
   nom: z.string(),
   taille: z.number(),
   url: z.string(),
+  typecontenu: z.string().default(""),
   creation: z.string(),
 })
 
