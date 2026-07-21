@@ -108,7 +108,12 @@ function ouvrirTache(tache: Tache) {
 }
 
 watch(taches, (valeur) => {
-  if (!tacheOuverte.value) return
+  if (!tacheOuverte.value) {
+    const demandee = String(route.query.tache ?? "")
+    const trouvee = demandee ? valeur?.find((tache) => tache.id === demandee) : undefined
+    if (trouvee) ouvrirTache(trouvee)
+    return
+  }
   const rafraichie = valeur?.find((tache) => tache.id === tacheOuverte.value?.id)
   if (rafraichie) tacheOuverte.value = rafraichie
 })

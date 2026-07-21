@@ -13,6 +13,7 @@ import {
   schemaProfil,
   schemaProjet,
   schemaReponseCle,
+  schemaResultat,
   schemaStatistiques,
   schemaTache,
   type FiltreTaches,
@@ -297,6 +298,15 @@ export function utiliserSuppressionTache() {
       ["taches", variables.projet],
       ["corbeille", variables.projet],
     ]),
+  })
+}
+
+export function utiliserRecherche(texte: Ref<string>) {
+  return useQuery({
+    queryKey: computed(() => ["recherche", texte.value]),
+    queryFn: async () =>
+      z.array(schemaResultat).parse((await client.get("/recherche", { params: { texte: texte.value } })).data),
+    enabled: computed(() => texte.value.trim().length >= 2),
   })
 }
 

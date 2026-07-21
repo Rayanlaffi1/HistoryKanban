@@ -89,6 +89,7 @@ func (s *Serveur) Routeur() *gin.Engine {
 	api.PUT("/taches/:id", s.modifierTache)
 	api.DELETE("/taches/:id", s.supprimerTache)
 	api.PUT("/taches/:id/deplacer", s.deplacerTache)
+	api.GET("/recherche", s.rechercher)
 	api.GET("/projets/:id/corbeille", s.listerCorbeille)
 	api.PUT("/taches/:id/restaurer", s.restaurerTache)
 	api.DELETE("/taches/:id/definitif", s.purgerTache)

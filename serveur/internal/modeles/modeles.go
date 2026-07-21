@@ -178,6 +178,22 @@ type Statistiques struct {
 	Totaux     TotauxStatistiques `json:"totaux"`
 }
 
+type Resultat struct {
+	Tache         string     `json:"tache"`
+	Titre         string     `json:"titre"`
+	Urgence       string     `json:"urgence"`
+	Echeance      *time.Time `json:"echeance"`
+	Projet        string     `json:"projet"`
+	ProjetNom     string     `json:"projetnom"`
+	ProjetCouleur string     `json:"projetcouleur"`
+	Groupe        string     `json:"groupe"`
+	GroupeNom     string     `json:"groupenom"`
+	Colonne       string     `json:"colonne"`
+	Origine       string     `json:"origine"`
+	Extrait       string     `json:"extrait"`
+	Modification  time.Time  `json:"modification"`
+}
+
 type Filtre struct {
 	Texte     string
 	Membre    string

@@ -5,6 +5,7 @@ import { utiliserProfil, utiliserNotifications } from "@/api/requetes"
 import { seDeconnecter } from "@/securite/keycloak"
 import Avatar from "@/composants/ui/Avatar.vue"
 import PanneauNotifications from "@/composants/PanneauNotifications.vue"
+import RechercheGlobale from "@/composants/RechercheGlobale.vue"
 
 const sombre = useDark()
 const basculerTheme = useToggle(sombre)
@@ -47,6 +48,7 @@ onClickOutside(zonePanneau, () => (panneauOuvert.value = false))
         </nav>
       </div>
       <div class="flex shrink-0 items-center gap-1 sm:gap-2">
+        <RechercheGlobale />
         <button
           class="rounded-md p-2 text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
           :title="sombre ? 'Mode clair' : 'Mode sombre'"

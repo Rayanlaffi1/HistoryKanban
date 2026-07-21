@@ -103,6 +103,22 @@ export const schemaTache = z.object({
   images: z.array(schemaImage),
 })
 
+export const schemaResultat = z.object({
+  tache: z.string(),
+  titre: z.string(),
+  urgence: z.string().default("normale"),
+  echeance: z.string().nullable(),
+  projet: z.string(),
+  projetnom: z.string(),
+  projetcouleur: z.string(),
+  groupe: z.string(),
+  groupenom: z.string(),
+  colonne: z.string(),
+  origine: z.string(),
+  extrait: z.string().default(""),
+  modification: z.string(),
+})
+
 export const schemaCommentaire = z.object({
   id: z.string(),
   tache: z.string(),
@@ -213,6 +229,7 @@ export interface ParametresStatistiques {
   granularite: "jour" | "semaine" | "mois"
   projet: string
 }
+export type Resultat = z.infer<typeof schemaResultat>
 export type Notification = z.infer<typeof schemaNotification>
 export type Preferences = z.infer<typeof schemaPreferences>
 export type DetailProjet = z.infer<typeof schemaDetailProjet>
