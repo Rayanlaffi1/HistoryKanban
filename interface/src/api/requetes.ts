@@ -12,8 +12,10 @@ import {
   schemaPreferences,
   schemaProfil,
   schemaProjet,
+  schemaStatistiques,
   schemaTache,
   type FiltreTaches,
+  type ParametresStatistiques,
   type Preferences,
 } from "@/api/types"
 
@@ -78,6 +80,26 @@ export function utiliserCommentaires(tache: Ref<string>) {
     queryKey: computed(() => ["commentaires", tache.value]),
     queryFn: async () => z.array(schemaCommentaire).parse((await client.get(`/taches/${tache.value}/commentaires`)).data),
     enabled: computed(() => tache.value !== ""),
+  })
+}
+
+export function utiliserStatistiques(groupe: Ref<string>, parametres: Ref<ParametresStatistiques>) {
+  return useQuery({
+    queryKey: computed(() => ["statistiques", groupe.value, parametres.value]),
+    queryFn: async () =>
+      schemaStatistiques.parse(
+        (
+          await client.get(`/groupes/${groupe.value}/statistiques`, {
+            params: {
+              debut: parametres.value.debut,
+              fin: parametres.value.fin,
+              granularite: parametres.value.granularite,
+              projet: parametres.value.projet || undefined,
+            },
+          })
+        ).data,
+      ),
+    enabled: computed(() => groupe.value !== ""),
   })
 }
 

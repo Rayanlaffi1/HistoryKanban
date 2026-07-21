@@ -135,6 +135,36 @@ type Preferences struct {
 	Types       map[string]bool `json:"types"`
 }
 
+type LigneClassement struct {
+	Utilisateur  string `json:"utilisateur"`
+	Nom          string `json:"nom"`
+	Prenom       string `json:"prenom"`
+	Points       int    `json:"points"`
+	Taches       int    `json:"taches"`
+	Creees       int    `json:"creees"`
+	Commentaires int    `json:"commentaires"`
+}
+
+type PointSerie struct {
+	Periode time.Time `json:"periode"`
+	Points  int       `json:"points"`
+	Taches  int       `json:"taches"`
+}
+
+type TotauxStatistiques struct {
+	Points      int `json:"points"`
+	Terminees   int `json:"terminees"`
+	EnRetard    int `json:"enretard"`
+	Total       int `json:"total"`
+	TotalPoints int `json:"totalpoints"`
+}
+
+type Statistiques struct {
+	Classement []LigneClassement  `json:"classement"`
+	Serie      []PointSerie       `json:"serie"`
+	Totaux     TotauxStatistiques `json:"totaux"`
+}
+
 type Filtre struct {
 	Texte     string
 	Membre    string

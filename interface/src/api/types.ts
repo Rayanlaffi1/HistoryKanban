@@ -137,6 +137,34 @@ export const schemaPreferences = z.object({
   types: z.record(z.boolean()),
 })
 
+export const schemaLigneClassement = z.object({
+  utilisateur: z.string(),
+  nom: z.string(),
+  prenom: z.string(),
+  points: z.number(),
+  taches: z.number(),
+  creees: z.number(),
+  commentaires: z.number(),
+})
+
+export const schemaStatistiques = z.object({
+  classement: z.array(schemaLigneClassement),
+  serie: z.array(
+    z.object({
+      periode: z.string(),
+      points: z.number(),
+      taches: z.number(),
+    }),
+  ),
+  totaux: z.object({
+    points: z.number(),
+    terminees: z.number(),
+    enretard: z.number(),
+    total: z.number(),
+    totalpoints: z.number(),
+  }),
+})
+
 export const schemaDetailProjet = z.object({
   projet: schemaProjet,
   colonnes: z.array(schemaColonne),
@@ -158,6 +186,15 @@ export type Image = z.infer<typeof schemaImage>
 export type Tache = z.infer<typeof schemaTache>
 export type Commentaire = z.infer<typeof schemaCommentaire>
 export type Activite = z.infer<typeof schemaActivite>
+export type Statistiques = z.infer<typeof schemaStatistiques>
+export type LigneClassement = z.infer<typeof schemaLigneClassement>
+
+export interface ParametresStatistiques {
+  debut: string
+  fin: string
+  granularite: "jour" | "semaine" | "mois"
+  projet: string
+}
 export type Notification = z.infer<typeof schemaNotification>
 export type Preferences = z.infer<typeof schemaPreferences>
 export type DetailProjet = z.infer<typeof schemaDetailProjet>

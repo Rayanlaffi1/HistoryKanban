@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import {
   utiliserGroupes,
@@ -17,6 +17,7 @@ import { libellesRoles, roles } from "@/api/types"
 import { formulaireGroupe, formulaireMembre, formulaireProjet, valider } from "@/utilitaires/validation"
 import { extraireErreur } from "@/utilitaires/erreurs"
 import { connectes } from "@/tempsreel/prise"
+import StatistiquesGroupe from "@/composants/groupe/StatistiquesGroupe.vue"
 import Bouton from "@/composants/ui/Bouton.vue"
 import Champ from "@/composants/ui/Champ.vue"
 import ChampCouleur from "@/composants/ui/ChampCouleur.vue"
@@ -140,6 +141,12 @@ const nbEnLigne = computed(
   () => (membres.value ?? []).filter((membre) => connectes.value.includes(membre.utilisateur)).length,
 )
 
+const ongletActif = ref<"apercu" | "statistiques">("apercu")
+const statistiquesVisitees = ref(false)
+watch(ongletActif, (valeur) => {
+  if (valeur === "statistiques") statistiquesVisitees.value = true
+})
+
 const rolesOrdonnes = ["lecteur", "membre", "administrateur", "proprietaire"]
 
 const droitsRoles = [
@@ -180,7 +187,26 @@ function quitterGroupe() {
       </div>
     </div>
 
-    <div class="mt-8 grid gap-6 lg:grid-cols-3">
+    <div class="mt-6 flex gap-1 rounded-lg bg-neutral-200/70 p-1 dark:bg-neutral-800 sm:w-fit">
+      <button
+        v-for="option in [
+          { valeur: 'apercu', libelle: 'Aperçu' },
+          { valeur: 'statistiques', libelle: 'Statistiques' },
+        ]"
+        :key="option.valeur"
+        class="rounded-md px-4 py-1.5 text-sm font-medium transition-colors"
+        :class="
+          ongletActif === option.valeur
+            ? 'bg-white text-neutral-900 shadow-sm dark:bg-neutral-900 dark:text-neutral-100'
+            : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100'
+        "
+        @click="ongletActif = option.valeur as 'apercu' | 'statistiques'"
+      >
+        {{ option.libelle }}
+      </button>
+    </div>
+
+    <div v-show="ongletActif === 'apercu'" class="mt-6 grid gap-6 lg:grid-cols-3">
       <section class="rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900 lg:col-span-2">
         <div class="flex items-center justify-between">
           <h2 class="text-lg font-semibold">Projets</h2>
@@ -268,7 +294,10 @@ function quitterGroupe() {
       </section>
     </div>
 
-    <section class="mt-6 rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900">
+    <section
+      v-show="ongletActif === 'apercu'"
+      class="mt-6 rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900"
+    >
       <h2 class="text-lg font-semibold">Fonctionnalités par rôle</h2>
       <p class="mt-1 text-sm text-neutral-500">
         Votre rôle dans ce groupe : <span class="font-medium text-neutral-900 dark:text-neutral-100">{{ libellesRoles[monRole] ?? monRole }}</span>
@@ -309,6 +338,10 @@ function quitterGroupe() {
         </table>
       </div>
     </section>
+
+    <div v-if="statistiquesVisitees" v-show="ongletActif === 'statistiques'" class="mt-6">
+      <StatistiquesGroupe :groupe="identifiant" />
+    </div>
 
     <Dialogue :ouvert="dialogueMembre" titre="Ajouter un membre" @fermer="dialogueMembre = false">
       <form class="space-y-4" @submit.prevent="ajouterMembre">
