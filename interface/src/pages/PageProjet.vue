@@ -11,7 +11,8 @@ import {
   utiliserTaches,
 } from "@/api/requetes"
 import type { Colonne, FiltreTaches, Tache } from "@/api/types"
-import { abonnerProjet, desabonnerProjet } from "@/tempsreel/prise"
+import { abonnerProjet, connectes, desabonnerProjet } from "@/tempsreel/prise"
+import Avatar from "@/composants/ui/Avatar.vue"
 import Bouton from "@/composants/ui/Bouton.vue"
 import BoutonRetour from "@/composants/ui/BoutonRetour.vue"
 import Dialogue from "@/composants/ui/Dialogue.vue"
@@ -212,7 +213,21 @@ function supprimerColonne() {
             <h1 class="text-lg font-bold">{{ detail?.projet.nom }}</h1>
             <span class="text-sm text-neutral-500">{{ taches?.length ?? 0 }} tâches · {{ totalPoints }} points</span>
           </div>
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-3">
+            <div class="flex -space-x-1.5">
+              <span
+                v-for="membre in (detail?.membres ?? []).slice(0, 8)"
+                :key="membre.utilisateur"
+                class="relative inline-flex"
+              >
+                <Avatar :nom="membre.nom" :prenom="membre.prenom" />
+                <span
+                  class="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white dark:border-neutral-950"
+                  :class="connectes.includes(membre.utilisateur) ? 'bg-green-500' : 'bg-neutral-400'"
+                  :title="connectes.includes(membre.utilisateur) ? 'En ligne' : 'Hors ligne'"
+                ></span>
+              </span>
+            </div>
             <div class="flex rounded-lg border border-neutral-300 p-0.5 dark:border-neutral-700">
               <button
                 v-for="option in densites"
