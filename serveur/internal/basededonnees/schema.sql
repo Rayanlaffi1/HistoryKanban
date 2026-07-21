@@ -109,6 +109,17 @@ CREATE TABLE IF NOT EXISTS images (
     creation TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS soustaches (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tache UUID NOT NULL REFERENCES taches(id) ON DELETE CASCADE,
+    libelle TEXT NOT NULL,
+    faite BOOLEAN NOT NULL DEFAULT false,
+    position INTEGER NOT NULL DEFAULT 0,
+    creation TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS soustaches_tache ON soustaches(tache);
+
 CREATE TABLE IF NOT EXISTS commentaires (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tache UUID NOT NULL REFERENCES taches(id) ON DELETE CASCADE,

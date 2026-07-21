@@ -27,6 +27,11 @@ const apercu = computed(() => visuels.value[0])
 const galerie = computed(() => visuels.value.slice(0, 3))
 const resume = computed(() => texteBrut(proprietes.tache.description))
 const urgente = computed(() => proprietes.tache.urgence !== "normale")
+const sousTaches = computed(() => proprietes.tache.soustaches ?? [])
+const sousTachesFaites = computed(() => sousTaches.value.filter((sousTache) => sousTache.faite).length)
+const avancement = computed(() =>
+  sousTaches.value.length ? (sousTachesFaites.value / sousTaches.value.length) * 100 : 0,
+)
 const bordureUrgence = computed(() => {
   if (proprietes.tache.urgence === "urgente") return "border-l-4 border-l-red-600"
   if (proprietes.tache.urgence === "elevee") return "border-l-4 border-l-amber-500"
@@ -48,6 +53,9 @@ const bordureUrgence = computed(() => {
         class="h-2 w-2 rounded-full bg-red-600"
         title="Échéance dépassée"
       ></span>
+      <span v-if="sousTaches.length" class="text-[11px] text-neutral-500">
+        {{ sousTachesFaites }}/{{ sousTaches.length }}
+      </span>
       <Badge v-if="tache.points > 0">{{ tache.points }}</Badge>
     </div>
   </article>
@@ -98,6 +106,16 @@ const bordureUrgence = computed(() => {
     <p v-if="densite === 'detaillee' && resume" class="mt-1 line-clamp-3 text-xs text-neutral-500 dark:text-neutral-400">
       {{ resume }}
     </p>
+
+    <div v-if="sousTaches.length" class="mt-2 flex items-center gap-2">
+      <div class="h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-700">
+        <div
+          class="h-full rounded-full bg-neutral-900 transition-all dark:bg-neutral-100"
+          :style="{ width: `${avancement}%` }"
+        ></div>
+      </div>
+      <span class="shrink-0 text-[11px] text-neutral-500">{{ sousTachesFaites }}/{{ sousTaches.length }}</span>
+    </div>
 
     <div v-if="tache.etiquettes.length || lot" class="mt-2 flex flex-wrap gap-1">
       <Badge v-if="lot" :couleur="lot.couleur">{{ lot.nom }}</Badge>

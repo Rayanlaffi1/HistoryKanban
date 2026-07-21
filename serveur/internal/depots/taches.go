@@ -72,12 +72,17 @@ func (d *Depot) Taches(ctx context.Context, projet string, filtre modeles.Filtre
 			return nil, erreur
 		}
 		tache.Images = []modeles.Image{}
+		tache.SousTaches = []modeles.SousTache{}
 		taches = append(taches, tache)
 	}
 	if erreur := lignes.Err(); erreur != nil {
 		return nil, erreur
 	}
-	return d.attacherImages(ctx, projet, taches)
+	taches, erreur = d.attacherImages(ctx, projet, taches)
+	if erreur != nil {
+		return nil, erreur
+	}
+	return d.attacherSousTaches(ctx, projet, taches)
 }
 
 func (d *Depot) attacherImages(ctx context.Context, projet string, taches []modeles.Tache) ([]modeles.Tache, error) {
@@ -134,7 +139,14 @@ func (d *Depot) Tache(ctx context.Context, id string) (*modeles.Tache, error) {
 		}
 		tache.Images = append(tache.Images, image)
 	}
-	return &tache, lignes.Err()
+	if erreur := lignes.Err(); erreur != nil {
+		return nil, erreur
+	}
+	tache.SousTaches, erreur = d.SousTaches(ctx, id)
+	if erreur != nil {
+		return nil, erreur
+	}
+	return &tache, nil
 }
 
 func (d *Depot) CreerTache(ctx context.Context, tache modeles.Tache) (*modeles.Tache, error) {

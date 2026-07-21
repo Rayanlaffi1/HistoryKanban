@@ -84,25 +84,35 @@ type Image struct {
 	Creation    time.Time `json:"creation"`
 }
 
+type SousTache struct {
+	ID       string    `json:"id"`
+	Tache    string    `json:"tache"`
+	Libelle  string    `json:"libelle"`
+	Faite    bool      `json:"faite"`
+	Position int       `json:"position"`
+	Creation time.Time `json:"creation"`
+}
+
 type Tache struct {
-	ID           string     `json:"id"`
-	Projet       string     `json:"projet"`
-	Colonne      string     `json:"colonne"`
-	Lot          *string    `json:"lot"`
-	Titre        string     `json:"titre"`
-	Description  string     `json:"description"`
-	Points       int        `json:"points"`
-	Urgence      string     `json:"urgence"`
-	Echeance     *time.Time `json:"echeance"`
-	Commit       string     `json:"commit"`
-	Position     int        `json:"position"`
-	Suppression  *time.Time `json:"suppression"`
-	Createur     string     `json:"createur"`
-	Creation     time.Time  `json:"creation"`
-	Modification time.Time  `json:"modification"`
-	Affectations []string   `json:"affectations"`
-	Etiquettes   []string   `json:"etiquettes"`
-	Images       []Image    `json:"images"`
+	ID           string      `json:"id"`
+	Projet       string      `json:"projet"`
+	Colonne      string      `json:"colonne"`
+	Lot          *string     `json:"lot"`
+	Titre        string      `json:"titre"`
+	Description  string      `json:"description"`
+	Points       int         `json:"points"`
+	Urgence      string      `json:"urgence"`
+	Echeance     *time.Time  `json:"echeance"`
+	Commit       string      `json:"commit"`
+	Position     int         `json:"position"`
+	Suppression  *time.Time  `json:"suppression"`
+	Createur     string      `json:"createur"`
+	Creation     time.Time   `json:"creation"`
+	Modification time.Time   `json:"modification"`
+	Affectations []string    `json:"affectations"`
+	Etiquettes   []string    `json:"etiquettes"`
+	Images       []Image     `json:"images"`
+	SousTaches   []SousTache `json:"soustaches"`
 }
 
 type Cle struct {

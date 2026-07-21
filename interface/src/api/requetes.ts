@@ -301,6 +301,29 @@ export function utiliserSuppressionTache() {
   })
 }
 
+export function utiliserCreationSousTache() {
+  return useMutation({
+    mutationFn: (corps: { tache: string; projet: string; libelle: string }) =>
+      client.post(`/taches/${corps.tache}/soustaches`, { libelle: corps.libelle }),
+    onSuccess: invalidation((variables: { projet: string }) => [["taches", variables.projet]]),
+  })
+}
+
+export function utiliserMutationSousTache() {
+  return useMutation({
+    mutationFn: (corps: { id: string; projet: string; libelle?: string; faite?: boolean }) =>
+      client.put(`/soustaches/${corps.id}`, { libelle: corps.libelle, faite: corps.faite }),
+    onSuccess: invalidation((variables: { projet: string }) => [["taches", variables.projet]]),
+  })
+}
+
+export function utiliserSuppressionSousTache() {
+  return useMutation({
+    mutationFn: (corps: { id: string; projet: string }) => client.delete(`/soustaches/${corps.id}`),
+    onSuccess: invalidation((variables: { projet: string }) => [["taches", variables.projet]]),
+  })
+}
+
 export function utiliserRecherche(texte: Ref<string>) {
   return useQuery({
     queryKey: computed(() => ["recherche", texte.value]),
