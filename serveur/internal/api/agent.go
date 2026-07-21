@@ -39,6 +39,10 @@ func (s *Serveur) authentifierAgent() gin.HandlerFunc {
 	}
 }
 
+func viaAgent(c *gin.Context) bool {
+	return c.GetString("projetagent") != ""
+}
+
 func (s *Serveur) forcerProjetAgent(suivant gin.HandlerFunc) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Params = append(c.Params, gin.Param{Key: "id", Value: c.GetString("projetagent")})

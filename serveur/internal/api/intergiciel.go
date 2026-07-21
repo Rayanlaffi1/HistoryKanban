@@ -109,6 +109,7 @@ func (s *Serveur) publier(categorie string, projet *modeles.Projet, titre string
 		Titre:         titre,
 		Donnees:       octets,
 		Destinataires: destinataires,
+		Agent:         viaAgent(c),
 	}
 	if projet != nil {
 		evenement.Projet = projet.ID

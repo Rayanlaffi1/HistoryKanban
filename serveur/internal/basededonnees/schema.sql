@@ -125,6 +125,7 @@ CREATE TABLE IF NOT EXISTS commentaires (
     tache UUID NOT NULL REFERENCES taches(id) ON DELETE CASCADE,
     auteur UUID NOT NULL REFERENCES utilisateurs(id),
     contenu TEXT NOT NULL,
+    agent BOOLEAN NOT NULL DEFAULT false,
     creation TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -134,6 +135,7 @@ CREATE TABLE IF NOT EXISTS activites (
     utilisateur UUID REFERENCES utilisateurs(id),
     type TEXT NOT NULL,
     detail TEXT NOT NULL DEFAULT '',
+    agent BOOLEAN NOT NULL DEFAULT false,
     creation TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -151,6 +153,8 @@ ALTER TABLE projets ADD COLUMN IF NOT EXISTS depot TEXT NOT NULL DEFAULT '';
 ALTER TABLE taches ADD COLUMN IF NOT EXISTS urgence TEXT NOT NULL DEFAULT 'normale';
 ALTER TABLE images ADD COLUMN IF NOT EXISTS typecontenu TEXT NOT NULL DEFAULT 'image/png';
 ALTER TABLE taches ADD COLUMN IF NOT EXISTS suppression TIMESTAMPTZ;
+ALTER TABLE activites ADD COLUMN IF NOT EXISTS agent BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE commentaires ADD COLUMN IF NOT EXISTS agent BOOLEAN NOT NULL DEFAULT false;
 
 CREATE INDEX IF NOT EXISTS taches_suppression ON taches(suppression);
 

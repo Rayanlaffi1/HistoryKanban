@@ -51,6 +51,13 @@ function commenter() {
             <span class="font-medium text-neutral-700 dark:text-neutral-300">
               {{ commentaire.prenom }} {{ commentaire.nom }}
             </span>
+            <span
+              v-if="commentaire.agent"
+              class="ml-1 rounded border border-neutral-300 px-1 py-0.5 align-middle text-[10px] font-semibold uppercase tracking-wide text-neutral-500 dark:border-neutral-600 dark:text-neutral-400"
+              title="Commentaire publié par un agent via une clé d'API"
+            >
+              agent
+            </span>
             · {{ depuis(commentaire.creation) }}
             <button
               v-if="commentaire.auteur === profil?.id"

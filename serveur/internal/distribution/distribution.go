@@ -100,7 +100,8 @@ func (d *Distributeur) journaliser(contexte context.Context, evenement evenement
 	case "tache.image.ajoutee":
 		detail = donnees.Nom
 	}
-	if erreur := d.Depot.CreerActivite(contexte, identifiant, evenement.Acteur, evenement.Type, detail); erreur != nil {
+	if erreur := d.Depot.CreerActivite(contexte, identifiant, evenement.Acteur, evenement.Type,
+		detail, evenement.Agent); erreur != nil {
 		log.Printf("enregistrement d'activite impossible : %v", erreur)
 	}
 }

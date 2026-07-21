@@ -401,16 +401,16 @@ func (d *Depot) NomColonne(ctx context.Context, colonne string) (string, error) 
 	return nom, erreur
 }
 
-func (d *Depot) CreerActivite(ctx context.Context, tache, utilisateur, categorie, detail string) error {
+func (d *Depot) CreerActivite(ctx context.Context, tache, utilisateur, categorie, detail string, agent bool) error {
 	_, erreur := d.bd.Exec(ctx,
-		`INSERT INTO activites (tache, utilisateur, type, detail) VALUES ($1, $2, $3, $4)`,
-		tache, utilisateur, categorie, detail)
+		`INSERT INTO activites (tache, utilisateur, type, detail, agent) VALUES ($1, $2, $3, $4, $5)`,
+		tache, utilisateur, categorie, detail, agent)
 	return erreur
 }
 
 func (d *Depot) Activites(ctx context.Context, tache string) ([]modeles.Activite, error) {
 	lignes, erreur := d.bd.Query(ctx, `
-		SELECT a.id, a.tache, coalesce(a.utilisateur::text, ''), a.type, a.detail, a.creation,
+		SELECT a.id, a.tache, coalesce(a.utilisateur::text, ''), a.type, a.detail, a.agent, a.creation,
 			coalesce(u.nom, ''), coalesce(u.prenom, '')
 		FROM activites a
 		LEFT JOIN utilisateurs u ON u.id = a.utilisateur
@@ -425,7 +425,7 @@ func (d *Depot) Activites(ctx context.Context, tache string) ([]modeles.Activite
 	for lignes.Next() {
 		var activite modeles.Activite
 		if erreur := lignes.Scan(&activite.ID, &activite.Tache, &activite.Utilisateur, &activite.Type,
-			&activite.Detail, &activite.Creation, &activite.Nom, &activite.Prenom); erreur != nil {
+			&activite.Detail, &activite.Agent, &activite.Creation, &activite.Nom, &activite.Prenom); erreur != nil {
 			return nil, erreur
 		}
 		activites = append(activites, activite)
@@ -435,7 +435,7 @@ func (d *Depot) Activites(ctx context.Context, tache string) ([]modeles.Activite
 
 func (d *Depot) Commentaires(ctx context.Context, tache string) ([]modeles.Commentaire, error) {
 	lignes, erreur := d.bd.Query(ctx, `
-		SELECT c.id, c.tache, c.auteur, c.contenu, c.creation, u.nom, u.prenom
+		SELECT c.id, c.tache, c.auteur, c.contenu, c.agent, c.creation, u.nom, u.prenom
 		FROM commentaires c JOIN utilisateurs u ON u.id = c.auteur
 		WHERE c.tache = $1 ORDER BY c.creation`, tache)
 	if erreur != nil {
@@ -446,7 +446,8 @@ func (d *Depot) Commentaires(ctx context.Context, tache string) ([]modeles.Comme
 	for lignes.Next() {
 		var commentaire modeles.Commentaire
 		if erreur := lignes.Scan(&commentaire.ID, &commentaire.Tache, &commentaire.Auteur,
-			&commentaire.Contenu, &commentaire.Creation, &commentaire.Nom, &commentaire.Prenom); erreur != nil {
+			&commentaire.Contenu, &commentaire.Agent, &commentaire.Creation,
+			&commentaire.Nom, &commentaire.Prenom); erreur != nil {
 			return nil, erreur
 		}
 		commentaires = append(commentaires, commentaire)
@@ -456,9 +457,9 @@ func (d *Depot) Commentaires(ctx context.Context, tache string) ([]modeles.Comme
 
 func (d *Depot) CreerCommentaire(ctx context.Context, commentaire modeles.Commentaire) (*modeles.Commentaire, error) {
 	erreur := d.bd.QueryRow(ctx, `
-		INSERT INTO commentaires (tache, auteur, contenu) VALUES ($1, $2, $3)
+		INSERT INTO commentaires (tache, auteur, contenu, agent) VALUES ($1, $2, $3, $4)
 		RETURNING id, creation`,
-		commentaire.Tache, commentaire.Auteur, commentaire.Contenu).
+		commentaire.Tache, commentaire.Auteur, commentaire.Contenu, commentaire.Agent).
 		Scan(&commentaire.ID, &commentaire.Creation)
 	if erreur != nil {
 		return nil, erreur

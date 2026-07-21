@@ -21,6 +21,7 @@ type Evenement struct {
 	Titre         string          `json:"titre"`
 	Donnees       json.RawMessage `json:"donnees"`
 	Destinataires []string        `json:"destinataires"`
+	Agent         bool            `json:"agent"`
 }
 
 type Bus struct {

@@ -127,6 +127,7 @@ type Commentaire struct {
 	Tache    string    `json:"tache"`
 	Auteur   string    `json:"auteur"`
 	Contenu  string    `json:"contenu"`
+	Agent    bool      `json:"agent"`
 	Creation time.Time `json:"creation"`
 	Nom      string    `json:"nom"`
 	Prenom   string    `json:"prenom"`
@@ -138,6 +139,7 @@ type Activite struct {
 	Utilisateur string    `json:"utilisateur"`
 	Type        string    `json:"type"`
 	Detail      string    `json:"detail"`
+	Agent       bool      `json:"agent"`
 	Creation    time.Time `json:"creation"`
 	Nom         string    `json:"nom"`
 	Prenom      string    `json:"prenom"`

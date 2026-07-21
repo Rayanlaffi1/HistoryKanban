@@ -326,6 +326,7 @@ func (s *Serveur) creerCommentaire(c *gin.Context) {
 		Tache:   tache.ID,
 		Auteur:  s.revendications(c).Utilisateur,
 		Contenu: corps.Contenu,
+		Agent:   viaAgent(c),
 	})
 	if erreur != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"erreur": "creation du commentaire impossible"})
