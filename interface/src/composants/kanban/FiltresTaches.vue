@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import type { Etiquette, FiltreTaches, Lot, Membre } from "@/api/types"
+import { libellesUrgences, urgences } from "@/api/types"
 
 defineProps<{
   membres: Membre[]
@@ -17,6 +18,7 @@ const actif = computed(() =>
       filtre.value.etiquette ||
       filtre.value.lot ||
       filtre.value.echeance ||
+      filtre.value.urgence ||
       filtre.value.pointsmin !== undefined ||
       filtre.value.pointsmax !== undefined,
   ),
@@ -69,6 +71,10 @@ const classeChamp =
       <option value="depassee">En retard</option>
       <option value="semaine">Sous 7 jours</option>
       <option value="sans">Sans échéance</option>
+    </select>
+    <select :value="filtre.urgence ?? ''" :class="classeChamp" @change="changer('urgence', ($event.target as HTMLSelectElement).value)">
+      <option value="">Toutes les urgences</option>
+      <option v-for="niveau in urgences" :key="niveau" :value="niveau">{{ libellesUrgences[niveau] }}</option>
     </select>
     <input
       :value="filtre.pointsmin ?? ''"

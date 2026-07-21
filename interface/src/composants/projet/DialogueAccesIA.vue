@@ -29,10 +29,10 @@ function generer() {
 const pointsEntree = [
   { methode: "GET", chemin: "/projet", detail: "Colonnes, membres, étiquettes et lots du projet" },
   { methode: "GET", chemin: "/membres", detail: "Membres du groupe : identifiant, nom, courriel, rôle et fonction" },
-  { methode: "GET", chemin: "/taches", detail: "Toutes les tâches du tableau" },
-  { methode: "POST", chemin: "/taches", detail: "Créer une tâche : { titre, colonne, description?, points?, echeance?, lot?, affectations?, etiquettes? }" },
+  { methode: "GET", chemin: "/taches", detail: "Toutes les tâches du tableau, filtrables par ?urgence=" },
+  { methode: "POST", chemin: "/taches", detail: "Créer une tâche : { titre, colonne, description?, points?, urgence?, echeance?, lot?, affectations?, etiquettes? }" },
   { methode: "GET", chemin: "/taches/{id}", detail: "Détail d'une tâche" },
-  { methode: "PUT", chemin: "/taches/{id}", detail: "Modifier une tâche : { titre, description?, points?, echeance?, lot?, commit? }" },
+  { methode: "PUT", chemin: "/taches/{id}", detail: "Modifier une tâche : { titre, description?, points?, urgence?, echeance?, lot?, commit? }" },
   { methode: "PUT", chemin: "/taches/{id}/deplacer", detail: "Déplacer vers une colonne : { colonne, position }" },
   { methode: "PUT", chemin: "/taches/{id}/affectations", detail: "Remplacer les personnes affectées : { affectations: [identifiants] }" },
   { methode: "PUT", chemin: "/taches/{id}/etiquettes", detail: "Remplacer les étiquettes : { etiquettes: [identifiants] }" },
@@ -143,6 +143,11 @@ const exemple = computed(
         <pre
           class="mt-3 overflow-x-auto rounded-xl bg-neutral-900 p-4 font-mono text-xs leading-relaxed text-neutral-100 dark:bg-neutral-800"
         >{{ exemple }}</pre>
+        <p class="mt-2 text-xs text-neutral-500">
+          Le champ <code class="font-mono">urgence</code> vaut <code class="font-mono">faible</code>,
+          <code class="font-mono">normale</code>, <code class="font-mono">elevee</code> ou
+          <code class="font-mono">urgente</code>. L'omettre lors d'une modification conserve le niveau existant.
+        </p>
         <p class="mt-2 text-xs text-neutral-500">
           Les accents passent par un fichier UTF-8 avec <code class="font-mono">--data-binary</code> : sous Windows,
           les écrire directement dans <code class="font-mono">-d "…"</code> les corrompt. Le serveur rattrape

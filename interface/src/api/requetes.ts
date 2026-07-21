@@ -275,6 +275,7 @@ export interface CorpsTache {
   description: string
   lot: string | null
   points: number
+  urgence: string
   echeance: string | null
   commit?: string
   affectations: string[]

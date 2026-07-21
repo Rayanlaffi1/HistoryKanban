@@ -89,6 +89,7 @@ export const schemaTache = z.object({
   titre: z.string(),
   description: z.string(),
   points: z.number(),
+  urgence: z.enum(["faible", "normale", "elevee", "urgente"]).default("normale"),
   echeance: z.string().nullable(),
   commit: z.string().default(""),
   position: z.number(),
@@ -220,8 +221,27 @@ export interface FiltreTaches {
   etiquette?: string
   lot?: string
   echeance?: string
+  urgence?: string
   pointsmin?: number
   pointsmax?: number
+}
+
+export const urgences = ["faible", "normale", "elevee", "urgente"] as const
+
+export type Urgence = (typeof urgences)[number]
+
+export const libellesUrgences: Record<Urgence, string> = {
+  faible: "Faible",
+  normale: "Normale",
+  elevee: "Élevée",
+  urgente: "Urgente",
+}
+
+export const couleursUrgences: Record<Urgence, string> = {
+  faible: "bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400",
+  normale: "bg-neutral-200 text-neutral-700 dark:bg-neutral-700 dark:text-neutral-200",
+  elevee: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
+  urgente: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300",
 }
 
 export const roles = ["administrateur", "membre", "lecteur"] as const

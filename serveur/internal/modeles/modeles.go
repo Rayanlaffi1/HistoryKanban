@@ -91,6 +91,7 @@ type Tache struct {
 	Titre        string     `json:"titre"`
 	Description  string     `json:"description"`
 	Points       int        `json:"points"`
+	Urgence      string     `json:"urgence"`
 	Echeance     *time.Time `json:"echeance"`
 	Commit       string     `json:"commit"`
 	Position     int        `json:"position"`
@@ -181,6 +182,7 @@ type Filtre struct {
 	Etiquette string
 	Lot       string
 	Echeance  string
+	Urgence   string
 	PointsMin *int
 	PointsMax *int
 }

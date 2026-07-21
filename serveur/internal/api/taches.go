@@ -35,6 +35,7 @@ func (s *Serveur) listerTaches(c *gin.Context) {
 		Etiquette: c.Query("etiquette"),
 		Lot:       c.Query("lot"),
 		Echeance:  c.Query("echeance"),
+		Urgence:   c.Query("urgence"),
 		PointsMin: entierRequete(c, "pointsmin"),
 		PointsMax: entierRequete(c, "pointsmax"),
 	}
@@ -52,10 +53,28 @@ type corpsTache struct {
 	Colonne      string     `json:"colonne"`
 	Lot          *string    `json:"lot"`
 	Points       int        `json:"points"`
+	Urgence      string     `json:"urgence"`
 	Echeance     *time.Time `json:"echeance"`
 	Commit       *string    `json:"commit"`
 	Affectations []string   `json:"affectations"`
 	Etiquettes   []string   `json:"etiquettes"`
+}
+
+var urgencesAutorisees = map[string]bool{
+	"faible":  true,
+	"normale": true,
+	"elevee":  true,
+	"urgente": true,
+}
+
+func urgenceValide(valeur string) (string, bool) {
+	if valeur == "" {
+		return "normale", true
+	}
+	if !urgencesAutorisees[valeur] {
+		return "", false
+	}
+	return valeur, true
 }
 
 func (s *Serveur) creerTache(c *gin.Context) {
@@ -68,6 +87,11 @@ func (s *Serveur) creerTache(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"erreur": "titre et colonne requis"})
 		return
 	}
+	urgence, valide := urgenceValide(corps.Urgence)
+	if !valide {
+		c.JSON(http.StatusBadRequest, gin.H{"erreur": "urgence invalide : faible, normale, elevee ou urgente"})
+		return
+	}
 	tache, erreur := s.Depot.CreerTache(c.Request.Context(), modeles.Tache{
 		Projet:       projet.ID,
 		Colonne:      corps.Colonne,
@@ -75,6 +99,7 @@ func (s *Serveur) creerTache(c *gin.Context) {
 		Titre:        corps.Titre,
 		Description:  corps.Description,
 		Points:       corps.Points,
+		Urgence:      urgence,
 		Echeance:     corps.Echeance,
 		Createur:     s.revendications(c).Utilisateur,
 		Affectations: corps.Affectations,
@@ -117,11 +142,20 @@ func (s *Serveur) modifierTache(c *gin.Context) {
 	if corps.Commit != nil {
 		commit = strings.TrimSpace(*corps.Commit)
 	}
+	urgence := tache.Urgence
+	if corps.Urgence != "" {
+		if !urgencesAutorisees[corps.Urgence] {
+			c.JSON(http.StatusBadRequest, gin.H{"erreur": "urgence invalide : faible, normale, elevee ou urgente"})
+			return
+		}
+		urgence = corps.Urgence
+	}
 	if erreur := s.Depot.ModifierTache(contexte, modeles.Tache{
 		ID:          tache.ID,
 		Titre:       corps.Titre,
 		Description: corps.Description,
 		Points:      corps.Points,
+		Urgence:     urgence,
 		Echeance:    corps.Echeance,
 		Lot:         corps.Lot,
 		Commit:      commit,

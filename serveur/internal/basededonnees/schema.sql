@@ -77,6 +77,7 @@ CREATE TABLE IF NOT EXISTS taches (
     titre TEXT NOT NULL,
     description TEXT NOT NULL DEFAULT '',
     points INTEGER NOT NULL DEFAULT 0,
+    urgence TEXT NOT NULL DEFAULT 'normale' CHECK (urgence IN ('faible','normale','elevee','urgente')),
     echeance TIMESTAMPTZ,
     commit TEXT NOT NULL DEFAULT '',
     position INTEGER NOT NULL DEFAULT 0,
@@ -134,6 +135,15 @@ CREATE TABLE IF NOT EXISTS notifications (
 
 ALTER TABLE taches ADD COLUMN IF NOT EXISTS commit TEXT NOT NULL DEFAULT '';
 ALTER TABLE projets ADD COLUMN IF NOT EXISTS depot TEXT NOT NULL DEFAULT '';
+ALTER TABLE taches ADD COLUMN IF NOT EXISTS urgence TEXT NOT NULL DEFAULT 'normale';
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'taches_urgence_valide') THEN
+        ALTER TABLE taches ADD CONSTRAINT taches_urgence_valide
+            CHECK (urgence IN ('faible','normale','elevee','urgente'));
+    END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS cles (
     projet UUID NOT NULL REFERENCES projets(id) ON DELETE CASCADE,

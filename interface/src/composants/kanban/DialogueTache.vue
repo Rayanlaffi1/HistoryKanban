@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, reactive, ref, watch } from "vue"
 import type { Colonne, Etiquette, Lot, Membre, Tache } from "@/api/types"
+import { couleursUrgences, libellesUrgences, urgences } from "@/api/types"
 import {
   televerserFichier,
   utiliserMutationTache,
@@ -52,6 +53,7 @@ const formulaire = reactive({
   colonne: "",
   lot: "",
   points: "0",
+  urgence: "normale",
   echeance: "",
   commit: "",
   affectations: [] as string[],
@@ -94,6 +96,7 @@ watch(
     formulaire.colonne = proprietes.tache?.colonne ?? proprietes.colonneInitiale
     formulaire.lot = proprietes.tache?.lot ?? ""
     formulaire.points = String(proprietes.tache?.points ?? 0)
+    formulaire.urgence = proprietes.tache?.urgence ?? "normale"
     formulaire.echeance = versChampDate(proprietes.tache?.echeance)
     formulaire.commit = proprietes.tache?.commit ?? ""
     formulaire.affectations = [...(proprietes.tache?.affectations ?? [])]
@@ -173,6 +176,7 @@ function enregistrer() {
       description: resultat.donnees.description === "" ? "" : assainir(resultat.donnees.description),
       lot: formulaire.lot || null,
       points: Number(resultat.donnees.points) || 0,
+      urgence: formulaire.urgence,
       echeance: depuisChampDate(formulaire.echeance),
       commit: formulaire.commit.trim(),
       affectations: formulaire.affectations,
@@ -248,7 +252,16 @@ function supprimer() {
       <div v-if="!edition && tache" class="space-y-5">
         <div class="flex items-start justify-between gap-3">
           <h3 class="min-w-0 break-words text-lg font-semibold leading-snug">{{ tache.titre }}</h3>
-          <Badge v-if="tache.points > 0">{{ tache.points }} pt{{ tache.points > 1 ? "s" : "" }}</Badge>
+          <div class="flex shrink-0 items-center gap-1.5">
+            <span
+              v-if="tache.urgence !== 'normale'"
+              class="rounded-full px-2 py-0.5 text-xs font-medium"
+              :class="couleursUrgences[tache.urgence]"
+            >
+              {{ libellesUrgences[tache.urgence] }}
+            </span>
+            <Badge v-if="tache.points > 0">{{ tache.points }} pt{{ tache.points > 1 ? "s" : "" }}</Badge>
+          </div>
         </div>
 
         <div v-if="tache.description" class="texteriche text-sm" v-html="assainir(tache.description)"></div>
@@ -267,6 +280,8 @@ function supprimer() {
             </template>
             <template v-else>—</template>
           </dd>
+          <dt class="text-neutral-500">Urgence</dt>
+          <dd class="font-medium">{{ libellesUrgences[tache.urgence] }}</dd>
           <dt class="text-neutral-500">Échéance</dt>
           <dd class="font-medium">{{ tache.echeance ? formaterDateHeure(tache.echeance) : "—" }}</dd>
           <dt class="text-neutral-500">Créée le</dt>
@@ -338,6 +353,9 @@ function supprimer() {
             </Selection>
             <Champ v-model="formulaire.echeance" etiquette="Échéance" type="datetime-local" />
             <Champ v-model="formulaire.points" etiquette="Points" type="number" :erreur="erreurs.points" />
+            <Selection v-model="formulaire.urgence" etiquette="Urgence">
+              <option v-for="niveau in urgences" :key="niveau" :value="niveau">{{ libellesUrgences[niveau] }}</option>
+            </Selection>
             <Champ v-if="tache" v-model="formulaire.commit" etiquette="Commit" indication="abc1234" />
           </div>
         </SectionFormulaire>
