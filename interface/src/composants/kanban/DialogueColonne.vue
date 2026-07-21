@@ -6,7 +6,9 @@ import { formulaireColonne, valider } from "@/utilitaires/validation"
 import { extraireErreur } from "@/utilitaires/erreurs"
 import Bouton from "@/composants/ui/Bouton.vue"
 import Champ from "@/composants/ui/Champ.vue"
+import ChampCouleur from "@/composants/ui/ChampCouleur.vue"
 import Dialogue from "@/composants/ui/Dialogue.vue"
+import SectionFormulaire from "@/composants/ui/SectionFormulaire.vue"
 
 const proprietes = defineProps<{
   ouvert: boolean
@@ -72,14 +74,11 @@ function supprimer() {
 <template>
   <Dialogue :ouvert="ouvert" :titre="colonne ? 'Modifier la colonne' : 'Nouvelle colonne'" @fermer="emissions('fermer')">
     <form class="space-y-4" @submit.prevent="enregistrer">
-      <Champ v-model="formulaire.nom" etiquette="Nom" indication="En revue" :erreur="erreurs.nom" />
-      <div class="grid grid-cols-2 gap-4">
-        <label class="block space-y-1.5">
-          <span class="text-sm font-medium text-neutral-700 dark:text-neutral-300">Couleur</span>
-          <input v-model="formulaire.couleur" type="color" class="h-10 w-20 cursor-pointer rounded-lg border border-neutral-300 bg-white dark:border-neutral-700 dark:bg-neutral-900" />
-        </label>
-        <Champ v-model="formulaire.limite" etiquette="Limite de tâches" type="number" indication="Aucune" :erreur="erreurs.limite" />
-      </div>
+      <Champ v-model="formulaire.nom" etiquette="Nom" obligatoire indication="En revue" :erreur="erreurs.nom" />
+      <SectionFormulaire titre="Apparence et règles">
+        <ChampCouleur v-model="formulaire.couleur" etiquette="Couleur" />
+        <Champ v-model="formulaire.limite" etiquette="Limite de tâches" type="number" indication="Aucune limite" :erreur="erreurs.limite" />
+      </SectionFormulaire>
       <p v-if="erreurApi" class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800 dark:bg-red-950/40 dark:text-red-300">{{ erreurApi }}</p>
       <div v-if="colonne" class="border-t border-neutral-200 pt-3 dark:border-neutral-800">
         <button v-if="!confirmation" type="button" class="text-sm text-red-700 hover:underline dark:text-red-500" @click="confirmation = true">

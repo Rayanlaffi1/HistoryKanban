@@ -2,8 +2,8 @@
 import { onBeforeUnmount, ref, watch } from "vue"
 import { useEditor, EditorContent } from "@tiptap/vue-3"
 import StarterKit from "@tiptap/starter-kit"
-import ExtensionImage from "@tiptap/extension-image"
 import Placeholder from "@tiptap/extension-placeholder"
+import { ImageRedimensionnable } from "@/composants/ui/imageredimensionnable"
 
 const proprietes = defineProps<{
   etiquette?: string
@@ -17,11 +17,33 @@ const modele = defineModel<string>({ default: "" })
 const champImage = ref<HTMLInputElement | null>(null)
 const envoiEnCours = ref(false)
 
+function deposerFichiers(fichiers: File[], position: number | null) {
+  if (!proprietes.televerser) return
+  for (const fichier of fichiers) {
+    envoiEnCours.value = true
+    proprietes
+      .televerser(fichier)
+      .then((url) => {
+        const instance = editeur.value
+        if (!instance) return
+        if (position !== null) {
+          const noeud = instance.state.schema.nodes.image.create({ src: url, alt: fichier.name })
+          instance.view.dispatch(instance.state.tr.insert(Math.min(position, instance.state.doc.content.size), noeud))
+        } else {
+          instance.chain().focus().setImage({ src: url, alt: fichier.name }).run()
+        }
+      })
+      .finally(() => {
+        envoiEnCours.value = false
+      })
+  }
+}
+
 const editeur = useEditor({
   content: modele.value,
   extensions: [
     StarterKit,
-    ExtensionImage,
+    ImageRedimensionnable,
     Placeholder.configure({ placeholder: proprietes.indication ?? "" }),
   ],
   editorProps: {
@@ -29,6 +51,27 @@ const editeur = useEditor({
       class:
         "texteriche focus:outline-none px-3 py-2 text-sm " +
         (proprietes.compact ? "min-h-16" : "min-h-28"),
+    },
+    handleDrop: (vue, evenement, _tranche, deplace) => {
+      if (deplace || !proprietes.televerser) return false
+      const fichiers = Array.from(evenement.dataTransfer?.files ?? []).filter((fichier) =>
+        fichier.type.startsWith("image/"),
+      )
+      if (!fichiers.length) return false
+      evenement.preventDefault()
+      const cible = vue.posAtCoords({ left: evenement.clientX, top: evenement.clientY })
+      deposerFichiers(fichiers, cible?.pos ?? null)
+      return true
+    },
+    handlePaste: (_vue, evenement) => {
+      if (!proprietes.televerser) return false
+      const fichiers = Array.from(evenement.clipboardData?.files ?? []).filter((fichier) =>
+        fichier.type.startsWith("image/"),
+      )
+      if (!fichiers.length) return false
+      evenement.preventDefault()
+      deposerFichiers(fichiers, null)
+      return true
     },
   },
   onUpdate: ({ editor }) => {

@@ -23,6 +23,7 @@ import Selection from "@/composants/ui/Selection.vue"
 import Dialogue from "@/composants/ui/Dialogue.vue"
 import Avatar from "@/composants/ui/Avatar.vue"
 import Badge from "@/composants/ui/Badge.vue"
+import SectionFormulaire from "@/composants/ui/SectionFormulaire.vue"
 
 const proprietes = defineProps<{
   ouvert: boolean
@@ -308,109 +309,110 @@ function commenter() {
         :televerser="envoyerImageContenu"
       />
 
-      <div class="grid gap-4 sm:grid-cols-2">
-        <Selection v-model="formulaire.colonne" etiquette="Colonne">
-          <option v-for="colonne in colonnes" :key="colonne.id" :value="colonne.id">{{ colonne.nom }}</option>
-        </Selection>
-        <Selection v-model="formulaire.lot" etiquette="Lot de tâches">
-          <option value="">Aucun lot</option>
-          <option v-for="lot in lots" :key="lot.id" :value="lot.id">
-            {{ lot.nom }}<template v-if="lot.echeance"> — {{ formaterDateHeure(lot.echeance) }}</template>
-          </option>
-        </Selection>
-        <Champ v-model="formulaire.points" etiquette="Points" type="number" :erreur="erreurs.points" />
-        <Champ v-model="formulaire.echeance" etiquette="Échéance" type="datetime-local" />
-      </div>
-
-      <div v-if="etiquettes.length">
-        <span class="text-sm font-medium text-neutral-700 dark:text-neutral-300">Étiquettes</span>
-        <div class="mt-2 flex flex-wrap gap-2">
-          <button
-            v-for="etiquette in etiquettes"
-            :key="etiquette.id"
-            type="button"
-            class="rounded-full border px-3 py-1 text-xs font-medium transition-colors"
-            :style="
-              formulaire.etiquettes.includes(etiquette.id)
-                ? { backgroundColor: etiquette.couleur, borderColor: etiquette.couleur, color: '#ffffff' }
-                : { borderColor: etiquette.couleur, color: etiquette.couleur }
-            "
-            @click="basculer(formulaire.etiquettes, etiquette.id)"
-          >
-            {{ etiquette.nom }}
-          </button>
+      <SectionFormulaire titre="Planification">
+        <div class="grid gap-4 sm:grid-cols-2">
+          <Selection v-model="formulaire.colonne" etiquette="Colonne">
+            <option v-for="colonne in colonnes" :key="colonne.id" :value="colonne.id">{{ colonne.nom }}</option>
+          </Selection>
+          <Selection v-model="formulaire.lot" etiquette="Lot de tâches">
+            <option value="">Aucun lot</option>
+            <option v-for="lot in lots" :key="lot.id" :value="lot.id">
+              {{ lot.nom }}<template v-if="lot.echeance"> — {{ formaterDateHeure(lot.echeance) }}</template>
+            </option>
+          </Selection>
+          <Champ v-model="formulaire.echeance" etiquette="Échéance" type="datetime-local" />
+          <Champ v-model="formulaire.points" etiquette="Points" type="number" :erreur="erreurs.points" />
         </div>
-      </div>
+      </SectionFormulaire>
 
-      <div>
-        <span class="text-sm font-medium text-neutral-700 dark:text-neutral-300">Affectations</span>
-        <div class="mt-2 flex flex-wrap gap-2">
-          <button
-            v-for="membre in membres"
-            :key="membre.utilisateur"
-            type="button"
-            class="flex items-center gap-2 rounded-full border px-2 py-1 text-xs transition-colors"
-            :class="
-              formulaire.affectations.includes(membre.utilisateur)
-                ? 'border-neutral-900 bg-neutral-900 text-white dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900'
-                : 'border-neutral-300 text-neutral-600 hover:border-neutral-500 dark:border-neutral-700 dark:text-neutral-400'
-            "
-            @click="basculer(formulaire.affectations, membre.utilisateur)"
-          >
-            <Avatar :nom="membre.nom" :prenom="membre.prenom" petite />
-            {{ membre.prenom }} {{ membre.nom }}
-          </button>
+      <SectionFormulaire v-if="etiquettes.length || membres.length" titre="Organisation">
+        <div v-if="etiquettes.length">
+          <span class="text-sm font-medium text-neutral-700 dark:text-neutral-300">Étiquettes</span>
+          <div class="mt-2 flex flex-wrap gap-2">
+            <button
+              v-for="etiquette in etiquettes"
+              :key="etiquette.id"
+              type="button"
+              class="rounded-full border px-3 py-1 text-xs font-medium transition-colors"
+              :style="
+                formulaire.etiquettes.includes(etiquette.id)
+                  ? { backgroundColor: etiquette.couleur, borderColor: etiquette.couleur, color: '#ffffff' }
+                  : { borderColor: etiquette.couleur, color: etiquette.couleur }
+              "
+              @click="basculer(formulaire.etiquettes, etiquette.id)"
+            >
+              {{ etiquette.nom }}
+            </button>
+          </div>
         </div>
-      </div>
+        <div v-if="membres.length">
+          <span class="text-sm font-medium text-neutral-700 dark:text-neutral-300">Affectations</span>
+          <div class="mt-2 flex flex-wrap gap-2">
+            <button
+              v-for="membre in membres"
+              :key="membre.utilisateur"
+              type="button"
+              class="flex items-center gap-2 rounded-full border px-2 py-1 text-xs transition-colors"
+              :class="
+                formulaire.affectations.includes(membre.utilisateur)
+                  ? 'border-neutral-900 bg-neutral-900 text-white dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900'
+                  : 'border-neutral-300 text-neutral-600 hover:border-neutral-500 dark:border-neutral-700 dark:text-neutral-400'
+              "
+              @click="basculer(formulaire.affectations, membre.utilisateur)"
+            >
+              <Avatar :nom="membre.nom" :prenom="membre.prenom" petite />
+              {{ membre.prenom }} {{ membre.nom }}
+            </button>
+          </div>
+        </div>
+      </SectionFormulaire>
 
-      <div v-if="tache">
-        <div class="flex items-center justify-between">
-          <span class="text-sm font-medium text-neutral-700 dark:text-neutral-300">Images</span>
+      <SectionFormulaire titre="Images">
+        <template v-if="tache">
+          <div v-if="tache.images.length" class="grid grid-cols-3 gap-2">
+            <div v-for="image in tache.images" :key="image.id" class="group relative">
+              <a :href="image.url" target="_blank" rel="noopener">
+                <img :src="image.url" :alt="image.nom" class="h-24 w-full rounded-lg object-cover" />
+              </a>
+              <button
+                v-if="edition"
+                class="absolute right-1 top-1 hidden rounded-md bg-neutral-950/70 px-1.5 py-0.5 text-xs text-white group-hover:block"
+                @click="suppressionImage.mutate({ id: image.id, projet })"
+              >
+                Retirer
+              </button>
+            </div>
+          </div>
+          <p v-else class="text-xs text-neutral-500">Aucune image jointe.</p>
           <label
             v-if="edition"
-            class="cursor-pointer text-xs text-neutral-500 hover:text-neutral-900 hover:underline dark:hover:text-neutral-100"
+            class="inline-flex h-9 cursor-pointer items-center rounded-lg border border-dashed border-neutral-300 px-3 text-xs font-medium text-neutral-600 transition-colors hover:border-neutral-500 hover:text-neutral-900 dark:border-neutral-600 dark:text-neutral-400 dark:hover:border-neutral-400 dark:hover:text-neutral-100"
           >
-            Ajouter une image
+            + Ajouter une image
             <input ref="champFichier" type="file" accept="image/*" class="hidden" @change="televerser" />
           </label>
-        </div>
-        <div v-if="tache.images.length" class="mt-2 grid grid-cols-3 gap-2">
-          <div v-for="image in tache.images" :key="image.id" class="group relative">
-            <a :href="image.url" target="_blank" rel="noopener">
-              <img :src="image.url" :alt="image.nom" class="h-24 w-full rounded-lg object-cover" />
-            </a>
-            <button
-              v-if="edition"
-              class="absolute right-1 top-1 hidden rounded-md bg-neutral-950/70 px-1.5 py-0.5 text-xs text-white group-hover:block"
-              @click="suppressionImage.mutate({ id: image.id, projet })"
-            >
-              Retirer
-            </button>
+        </template>
+        <template v-else>
+          <div v-if="enAttente.length" class="grid grid-cols-3 gap-2">
+            <div v-for="(element, indice) in enAttente" :key="element.url" class="group relative">
+              <img :src="element.url" :alt="element.fichier.name" class="h-24 w-full rounded-lg object-cover" />
+              <button
+                class="absolute right-1 top-1 hidden rounded-md bg-neutral-950/70 px-1.5 py-0.5 text-xs text-white group-hover:block"
+                @click="retirerEnAttente(indice)"
+              >
+                Retirer
+              </button>
+            </div>
           </div>
-        </div>
-        <p v-else class="mt-2 text-xs text-neutral-500">Aucune image jointe.</p>
-      </div>
-      <div v-else>
-        <div class="flex items-center justify-between">
-          <span class="text-sm font-medium text-neutral-700 dark:text-neutral-300">Images</span>
-          <label class="cursor-pointer text-xs text-neutral-500 hover:text-neutral-900 hover:underline dark:hover:text-neutral-100">
-            Ajouter des images
+          <p v-else class="text-xs text-neutral-500">Elles seront téléversées à la création de la tâche.</p>
+          <label
+            class="inline-flex h-9 cursor-pointer items-center rounded-lg border border-dashed border-neutral-300 px-3 text-xs font-medium text-neutral-600 transition-colors hover:border-neutral-500 hover:text-neutral-900 dark:border-neutral-600 dark:text-neutral-400 dark:hover:border-neutral-400 dark:hover:text-neutral-100"
+          >
+            + Ajouter des images
             <input type="file" accept="image/*" multiple class="hidden" @change="selectionner" />
           </label>
-        </div>
-        <div v-if="enAttente.length" class="mt-2 grid grid-cols-3 gap-2">
-          <div v-for="(element, indice) in enAttente" :key="element.url" class="group relative">
-            <img :src="element.url" :alt="element.fichier.name" class="h-24 w-full rounded-lg object-cover" />
-            <button
-              class="absolute right-1 top-1 hidden rounded-md bg-neutral-950/70 px-1.5 py-0.5 text-xs text-white group-hover:block"
-              @click="retirerEnAttente(indice)"
-            >
-              Retirer
-            </button>
-          </div>
-        </div>
-        <p v-else class="mt-2 text-xs text-neutral-500">Elles seront téléversées à la création de la tâche.</p>
-      </div>
+        </template>
+      </SectionFormulaire>
 
       <div v-if="tache" class="border-t border-neutral-200 pt-4 dark:border-neutral-800">
         <span class="text-sm font-medium text-neutral-700 dark:text-neutral-300">Commentaires</span>

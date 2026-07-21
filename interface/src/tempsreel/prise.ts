@@ -58,6 +58,9 @@ export function demarrerTempsReel(clientRequetes: QueryClient) {
         } else {
           clientRequetes.invalidateQueries({ queryKey: ["projet", message.projet] })
         }
+        if (message.type === "tache.commentee" && message.donnees?.tache) {
+          clientRequetes.invalidateQueries({ queryKey: ["commentaires", message.donnees.tache] })
+        }
         if (message.type === "tache.deplacee" && notifierDeplacement.value) {
           magasin.annoncer(
             "Tâche déplacée",

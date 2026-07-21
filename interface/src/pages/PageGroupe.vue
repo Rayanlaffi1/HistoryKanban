@@ -18,6 +18,7 @@ import { formulaireGroupe, formulaireMembre, formulaireProjet, valider } from "@
 import { extraireErreur } from "@/utilitaires/erreurs"
 import Bouton from "@/composants/ui/Bouton.vue"
 import Champ from "@/composants/ui/Champ.vue"
+import ChampCouleur from "@/composants/ui/ChampCouleur.vue"
 import Zone from "@/composants/ui/Zone.vue"
 import Dialogue from "@/composants/ui/Dialogue.vue"
 import Selection from "@/composants/ui/Selection.vue"
@@ -241,12 +242,14 @@ function quitterGroupe() {
 
     <Dialogue :ouvert="dialogueMembre" titre="Ajouter un membre" @fermer="dialogueMembre = false">
       <form class="space-y-4" @submit.prevent="ajouterMembre">
-        <Champ v-model="courrielMembre" etiquette="Courriel" type="email" indication="collegue@exemple.fr" :erreur="erreursMembre.courriel" />
-        <Selection v-model="roleMembre" etiquette="Rôle">
-          <option v-for="role in roles" :key="role" :value="role">{{ libellesRoles[role] }}</option>
-        </Selection>
+        <div class="grid gap-4 sm:grid-cols-[1fr,10rem]">
+          <Champ v-model="courrielMembre" etiquette="Courriel" type="email" obligatoire indication="collegue@exemple.fr" :erreur="erreursMembre.courriel" />
+          <Selection v-model="roleMembre" etiquette="Rôle">
+            <option v-for="role in roles" :key="role" :value="role">{{ libellesRoles[role] }}</option>
+          </Selection>
+        </div>
         <p v-if="erreurMembre" class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800 dark:bg-red-950/40 dark:text-red-300">{{ erreurMembre }}</p>
-        <p class="text-xs text-neutral-500">
+        <p class="rounded-lg bg-neutral-100 px-3 py-2 text-xs text-neutral-500 dark:bg-neutral-800/60">
           La personne doit s'être connectée au moins une fois à HistoryKanban.
         </p>
       </form>
@@ -258,12 +261,9 @@ function quitterGroupe() {
 
     <Dialogue :ouvert="dialogueProjet" titre="Nouveau projet" @fermer="dialogueProjet = false">
       <form class="space-y-4" @submit.prevent="creerProjet">
-        <Champ v-model="nomProjet" etiquette="Nom" indication="Refonte du site" :erreur="erreursProjet.nom" />
-        <Zone v-model="descriptionProjet" etiquette="Description" :erreur="erreursProjet.description" />
-        <label class="block space-y-1.5">
-          <span class="text-sm font-medium text-neutral-700 dark:text-neutral-300">Couleur</span>
-          <input v-model="couleurProjet" type="color" class="h-10 w-20 cursor-pointer rounded-lg border border-neutral-300 bg-white dark:border-neutral-700 dark:bg-neutral-900" />
-        </label>
+        <Champ v-model="nomProjet" etiquette="Nom" obligatoire indication="Refonte du site" :erreur="erreursProjet.nom" />
+        <Zone v-model="descriptionProjet" etiquette="Description" indication="Objectif du projet…" :erreur="erreursProjet.description" />
+        <ChampCouleur v-model="couleurProjet" etiquette="Couleur du projet" />
         <p v-if="erreurProjet" class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800 dark:bg-red-950/40 dark:text-red-300">{{ erreurProjet }}</p>
       </form>
       <template #pied>

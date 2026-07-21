@@ -6,7 +6,7 @@ export function assainir(html: string): string {
       "p", "br", "strong", "em", "s", "u", "h1", "h2", "h3",
       "ul", "ol", "li", "blockquote", "code", "pre", "a", "img",
     ],
-    ALLOWED_ATTR: ["href", "src", "alt", "title", "target", "rel"],
+    ALLOWED_ATTR: ["href", "src", "alt", "title", "target", "rel", "width", "height"],
   })
 }
 

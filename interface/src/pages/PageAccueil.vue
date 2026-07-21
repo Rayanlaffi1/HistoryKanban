@@ -79,7 +79,7 @@ function creer() {
 
     <Dialogue :ouvert="dialogueOuvert" titre="Nouveau groupe" @fermer="dialogueOuvert = false">
       <form class="space-y-4" @submit.prevent="creer">
-        <Champ v-model="nom" etiquette="Nom" indication="Équipe produit" :erreur="erreurs.nom" />
+        <Champ v-model="nom" etiquette="Nom" obligatoire indication="Équipe produit" :erreur="erreurs.nom" />
         <Zone v-model="description" etiquette="Description" indication="À quoi sert ce groupe ?" :erreur="erreurs.description" />
         <p v-if="erreurApi" class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800 dark:bg-red-950/40 dark:text-red-300">
           {{ erreurApi }}

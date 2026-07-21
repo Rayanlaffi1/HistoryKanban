@@ -60,7 +60,28 @@ body {
 }
 
 .texteriche img {
-  @apply my-2 max-h-64 max-w-full rounded-lg;
+  @apply my-2 h-auto max-w-full rounded-lg;
+}
+
+.texteriche .imageconteneur {
+  @apply relative my-2 inline-block max-w-full;
+}
+
+.texteriche .imageconteneur img {
+  @apply my-0;
+}
+
+.texteriche .imageconteneur .imagepoignee {
+  @apply absolute -bottom-1.5 -right-1.5 h-3.5 w-3.5 cursor-nwse-resize rounded-full border-2 border-white bg-neutral-900 opacity-0 transition-opacity dark:border-neutral-900 dark:bg-neutral-100;
+}
+
+.texteriche .imageconteneur:hover .imagepoignee,
+.texteriche .imageconteneur.ProseMirror-selectednode .imagepoignee {
+  @apply opacity-100;
+}
+
+.texteriche .ProseMirror-selectednode img {
+  @apply ring-2 ring-neutral-500;
 }
 
 .texteriche a {
