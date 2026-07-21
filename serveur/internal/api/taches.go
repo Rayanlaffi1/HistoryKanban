@@ -219,15 +219,67 @@ func (s *Serveur) supprimerTache(c *gin.Context) {
 	if !autorise {
 		return
 	}
-	for _, image := range tache.Images {
-		s.Stockage.Supprimer(c.Request.Context(), image.Chemin)
-	}
 	if erreur := s.Depot.SupprimerTache(c.Request.Context(), tache.ID); erreur != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"erreur": "suppression de la tache impossible"})
 		return
 	}
 	s.publier("tache.supprimee", projet, tache.Titre, gin.H{"id": tache.ID, "colonne": tache.Colonne}, tache.Affectations, c)
 	c.JSON(http.StatusOK, gin.H{"etat": "supprime"})
+}
+
+func (s *Serveur) listerCorbeille(c *gin.Context) {
+	projet, autorise := s.exigerRoleProjet(c, c.Param("id"), "lecteur")
+	if !autorise {
+		return
+	}
+	taches, erreur := s.Depot.Corbeille(c.Request.Context(), projet.ID)
+	if erreur != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"erreur": "lecture de la corbeille impossible"})
+		return
+	}
+	c.JSON(http.StatusOK, taches)
+}
+
+func (s *Serveur) restaurerTache(c *gin.Context) {
+	tache, projet, autorise := s.tacheAutorisee(c, "membre")
+	if !autorise {
+		return
+	}
+	if tache.Suppression == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"erreur": "cette tache n'est pas dans la corbeille"})
+		return
+	}
+	if erreur := s.Depot.RestaurerTache(c.Request.Context(), tache.ID); erreur != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"erreur": "restauration impossible"})
+		return
+	}
+	resultat, erreur := s.Depot.Tache(c.Request.Context(), tache.ID)
+	if erreur != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"erreur": "relecture de la tache impossible"})
+		return
+	}
+	s.remplirURLsTache(resultat)
+	s.publier("tache.creee", projet, resultat.Titre, resultat, resultat.Affectations, c)
+	c.JSON(http.StatusOK, resultat)
+}
+
+func (s *Serveur) purgerTache(c *gin.Context) {
+	tache, _, autorise := s.tacheAutorisee(c, "membre")
+	if !autorise {
+		return
+	}
+	if tache.Suppression == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"erreur": "cette tache n'est pas dans la corbeille"})
+		return
+	}
+	for _, image := range tache.Images {
+		s.Stockage.Supprimer(c.Request.Context(), image.Chemin)
+	}
+	if erreur := s.Depot.PurgerTache(c.Request.Context(), tache.ID); erreur != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"erreur": "suppression definitive impossible"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"etat": "purge"})
 }
 
 func (s *Serveur) listerActivites(c *gin.Context) {

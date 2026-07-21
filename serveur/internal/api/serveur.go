@@ -89,6 +89,9 @@ func (s *Serveur) Routeur() *gin.Engine {
 	api.PUT("/taches/:id", s.modifierTache)
 	api.DELETE("/taches/:id", s.supprimerTache)
 	api.PUT("/taches/:id/deplacer", s.deplacerTache)
+	api.GET("/projets/:id/corbeille", s.listerCorbeille)
+	api.PUT("/taches/:id/restaurer", s.restaurerTache)
+	api.DELETE("/taches/:id/definitif", s.purgerTache)
 	api.PUT("/taches/:id/commit", s.agentRenseignerCommit)
 	api.GET("/taches/:id/activites", s.listerActivites)
 	api.GET("/taches/:id/commentaires", s.listerCommentaires)
@@ -117,6 +120,8 @@ func (s *Serveur) Routeur() *gin.Engine {
 	agent.GET("/taches/:id/commentaires", s.verifierTacheAgent(s.listerCommentaires))
 	agent.POST("/taches/:id/commentaires", s.verifierTacheAgent(s.creerCommentaire))
 	agent.GET("/taches/:id/activites", s.verifierTacheAgent(s.listerActivites))
+	agent.GET("/corbeille", s.forcerProjetAgent(s.listerCorbeille))
+	agent.PUT("/taches/:id/restaurer", s.verifierTacheAgent(s.restaurerTache))
 
 	return moteur
 }

@@ -24,6 +24,7 @@ import DialogueTache from "@/composants/kanban/DialogueTache.vue"
 import DialogueColonne from "@/composants/kanban/DialogueColonne.vue"
 import DialogueReferentiels from "@/composants/kanban/DialogueReferentiels.vue"
 import DialogueAccesIA from "@/composants/projet/DialogueAccesIA.vue"
+import DialogueCorbeille from "@/composants/projet/DialogueCorbeille.vue"
 import DialogueParametresProjet from "@/composants/projet/DialogueParametresProjet.vue"
 
 const route = useRoute()
@@ -122,6 +123,7 @@ function ouvrirColonne(colonne: Colonne | null) {
 
 const dialogueReferentiels = ref(false)
 const dialogueAccesIA = ref(false)
+const dialogueCorbeille = ref(false)
 const dialogueParametres = ref(false)
 
 const densite = useLocalStorage<Densite>("historykanban.densite", "defaut")
@@ -250,6 +252,9 @@ function supprimerColonne() {
             <Bouton v-if="edition" taille="petite" variante="secondaire" @click="dialogueAccesIA = true">
               Accès IA
             </Bouton>
+            <Bouton v-if="edition" taille="petite" variante="secondaire" @click="dialogueCorbeille = true">
+              Corbeille
+            </Bouton>
             <Bouton v-if="edition" taille="petite" variante="secondaire" @click="dialogueReferentiels = true">
               Étiquettes et lots
             </Bouton>
@@ -329,6 +334,7 @@ function supprimerColonne() {
     />
 
     <DialogueAccesIA :ouvert="dialogueAccesIA" :projet="identifiant" @fermer="dialogueAccesIA = false" />
+    <DialogueCorbeille :ouvert="dialogueCorbeille" :projet="identifiant" @fermer="dialogueCorbeille = false" />
 
     <DialogueReferentiels
       :ouvert="dialogueReferentiels"

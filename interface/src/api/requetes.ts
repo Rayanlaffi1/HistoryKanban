@@ -293,7 +293,36 @@ export function utiliserMutationTache() {
 export function utiliserSuppressionTache() {
   return useMutation({
     mutationFn: (corps: { id: string; projet: string }) => client.delete(`/taches/${corps.id}`),
-    onSuccess: invalidation((variables: { projet: string }) => [["taches", variables.projet]]),
+    onSuccess: invalidation((variables: { projet: string }) => [
+      ["taches", variables.projet],
+      ["corbeille", variables.projet],
+    ]),
+  })
+}
+
+export function utiliserCorbeille(projet: Ref<string>, actif: Ref<boolean>) {
+  return useQuery({
+    queryKey: computed(() => ["corbeille", projet.value]),
+    queryFn: async () =>
+      z.array(schemaTache).parse((await client.get(`/projets/${projet.value}/corbeille`)).data),
+    enabled: computed(() => actif.value && projet.value !== ""),
+  })
+}
+
+export function utiliserRestaurationTache() {
+  return useMutation({
+    mutationFn: (corps: { id: string; projet: string }) => client.put(`/taches/${corps.id}/restaurer`),
+    onSuccess: invalidation((variables: { projet: string }) => [
+      ["taches", variables.projet],
+      ["corbeille", variables.projet],
+    ]),
+  })
+}
+
+export function utiliserPurgeTache() {
+  return useMutation({
+    mutationFn: (corps: { id: string; projet: string }) => client.delete(`/taches/${corps.id}/definitif`),
+    onSuccess: invalidation((variables: { projet: string }) => [["corbeille", variables.projet]]),
   })
 }
 

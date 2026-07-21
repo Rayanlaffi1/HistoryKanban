@@ -10,7 +10,7 @@ import (
 
 const selectionTaches = `
 	SELECT t.id, t.projet, t.colonne, t.lot, t.titre, t.description, t.points, t.urgence, t.echeance, t.commit,
-		t.position, t.createur, t.creation, t.modification,
+		t.position, t.suppression, t.createur, t.creation, t.modification,
 		coalesce(array_agg(DISTINCT a.utilisateur::text) FILTER (WHERE a.utilisateur IS NOT NULL), '{}'),
 		coalesce(array_agg(DISTINCT e.etiquette::text) FILTER (WHERE e.etiquette IS NOT NULL), '{}')
 	FROM taches t
@@ -18,7 +18,7 @@ const selectionTaches = `
 	LEFT JOIN etiquetages e ON e.tache = t.id`
 
 func (d *Depot) Taches(ctx context.Context, projet string, filtre modeles.Filtre) ([]modeles.Tache, error) {
-	conditions := []string{"t.projet = $1"}
+	conditions := []string{"t.projet = $1", "t.suppression IS NULL"}
 	parametres := []any{projet}
 	suivant := 2
 	ajouter := func(condition string, valeur any) {
@@ -67,7 +67,8 @@ func (d *Depot) Taches(ctx context.Context, projet string, filtre modeles.Filtre
 		var tache modeles.Tache
 		if erreur := lignes.Scan(&tache.ID, &tache.Projet, &tache.Colonne, &tache.Lot, &tache.Titre,
 			&tache.Description, &tache.Points, &tache.Urgence, &tache.Echeance, &tache.Commit, &tache.Position,
-			&tache.Createur, &tache.Creation, &tache.Modification, &tache.Affectations, &tache.Etiquettes); erreur != nil {
+			&tache.Suppression, &tache.Createur, &tache.Creation, &tache.Modification,
+			&tache.Affectations, &tache.Etiquettes); erreur != nil {
 			return nil, erreur
 		}
 		tache.Images = []modeles.Image{}
@@ -113,7 +114,8 @@ func (d *Depot) Tache(ctx context.Context, id string) (*modeles.Tache, error) {
 	erreur := d.bd.QueryRow(ctx, selectionTaches+"\n\tWHERE t.id = $1\n\tGROUP BY t.id", id).
 		Scan(&tache.ID, &tache.Projet, &tache.Colonne, &tache.Lot, &tache.Titre,
 			&tache.Description, &tache.Points, &tache.Urgence, &tache.Echeance, &tache.Commit, &tache.Position,
-			&tache.Createur, &tache.Creation, &tache.Modification, &tache.Affectations, &tache.Etiquettes)
+			&tache.Suppression, &tache.Createur, &tache.Creation, &tache.Modification,
+			&tache.Affectations, &tache.Etiquettes)
 	if erreur != nil {
 		return nil, erreur
 	}
@@ -178,8 +180,72 @@ func (d *Depot) ModifierCommit(ctx context.Context, id, commit string) error {
 }
 
 func (d *Depot) SupprimerTache(ctx context.Context, id string) error {
+	_, erreur := d.bd.Exec(ctx,
+		`UPDATE taches SET suppression = now(), modification = now() WHERE id = $1 AND suppression IS NULL`, id)
+	return erreur
+}
+
+func (d *Depot) RestaurerTache(ctx context.Context, id string) error {
+	_, erreur := d.bd.Exec(ctx, `
+		UPDATE taches SET suppression = NULL, modification = now(),
+			position = (SELECT coalesce(max(position), -1) + 1 FROM taches p
+				WHERE p.colonne = taches.colonne AND p.suppression IS NULL)
+		WHERE id = $1 AND suppression IS NOT NULL`, id)
+	return erreur
+}
+
+func (d *Depot) PurgerTache(ctx context.Context, id string) error {
 	_, erreur := d.bd.Exec(ctx, `DELETE FROM taches WHERE id = $1`, id)
 	return erreur
+}
+
+func (d *Depot) Corbeille(ctx context.Context, projet string) ([]modeles.Tache, error) {
+	requete := selectionTaches + `
+	WHERE t.projet = $1 AND t.suppression IS NOT NULL
+	GROUP BY t.id
+	ORDER BY t.suppression DESC`
+	lignes, erreur := d.bd.Query(ctx, requete, projet)
+	if erreur != nil {
+		return nil, erreur
+	}
+	defer lignes.Close()
+	taches := []modeles.Tache{}
+	for lignes.Next() {
+		var tache modeles.Tache
+		if erreur := lignes.Scan(&tache.ID, &tache.Projet, &tache.Colonne, &tache.Lot, &tache.Titre,
+			&tache.Description, &tache.Points, &tache.Urgence, &tache.Echeance, &tache.Commit, &tache.Position,
+			&tache.Suppression, &tache.Createur, &tache.Creation, &tache.Modification,
+			&tache.Affectations, &tache.Etiquettes); erreur != nil {
+			return nil, erreur
+		}
+		tache.Images = []modeles.Image{}
+		taches = append(taches, tache)
+	}
+	return taches, lignes.Err()
+}
+
+func (d *Depot) TachesExpirees(ctx context.Context, jours int) ([]string, []string, error) {
+	lignes, erreur := d.bd.Query(ctx, `
+		SELECT t.id, coalesce(array_agg(i.chemin) FILTER (WHERE i.chemin IS NOT NULL), '{}')
+		FROM taches t LEFT JOIN images i ON i.tache = t.id
+		WHERE t.suppression IS NOT NULL AND t.suppression < now() - make_interval(days => $1)
+		GROUP BY t.id`, jours)
+	if erreur != nil {
+		return nil, nil, erreur
+	}
+	defer lignes.Close()
+	identifiants := []string{}
+	chemins := []string{}
+	for lignes.Next() {
+		var identifiant string
+		var fichiers []string
+		if erreur := lignes.Scan(&identifiant, &fichiers); erreur != nil {
+			return nil, nil, erreur
+		}
+		identifiants = append(identifiants, identifiant)
+		chemins = append(chemins, fichiers...)
+	}
+	return identifiants, chemins, lignes.Err()
 }
 
 func (d *Depot) DeplacerTache(ctx context.Context, id, colonne string, position int) error {

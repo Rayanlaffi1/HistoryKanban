@@ -13,7 +13,7 @@ const cteTerminees = `
 		SELECT t.id, t.points, t.modification, t.createur
 		FROM taches t
 		JOIN colonnes c ON c.id = t.colonne
-		WHERE t.projet = ANY($1)
+		WHERE t.projet = ANY($1) AND t.suppression IS NULL
 			AND t.modification BETWEEN $2 AND $3
 			AND c.position = (SELECT max(cc.position) FROM colonnes cc WHERE cc.projet = t.projet)
 	)`
@@ -87,7 +87,7 @@ func (d *Depot) Statistiques(ctx context.Context, projets []string, debut, fin t
 		SELECT t.createur, u.nom, u.prenom, count(*)
 		FROM taches t
 		JOIN utilisateurs u ON u.id = t.createur
-		WHERE t.projet = ANY($1) AND t.creation BETWEEN $2 AND $3
+		WHERE t.projet = ANY($1) AND t.suppression IS NULL AND t.creation BETWEEN $2 AND $3
 		GROUP BY t.createur, u.nom, u.prenom`,
 		projets, debut, fin)
 	if erreur != nil {
@@ -112,7 +112,7 @@ func (d *Depot) Statistiques(ctx context.Context, projets []string, debut, fin t
 		FROM commentaires c
 		JOIN taches t ON t.id = c.tache
 		JOIN utilisateurs u ON u.id = c.auteur
-		WHERE t.projet = ANY($1) AND c.creation BETWEEN $2 AND $3
+		WHERE t.projet = ANY($1) AND t.suppression IS NULL AND c.creation BETWEEN $2 AND $3
 		GROUP BY c.auteur, u.nom, u.prenom`,
 		projets, debut, fin)
 	if erreur != nil {
@@ -177,7 +177,7 @@ func (d *Depot) Statistiques(ctx context.Context, projets []string, debut, fin t
 				AND c.position <> (SELECT max(cc.position) FROM colonnes cc WHERE cc.projet = t.projet))
 		FROM taches t
 		JOIN colonnes c ON c.id = t.colonne
-		WHERE t.projet = ANY($1)`, projets).
+		WHERE t.projet = ANY($1) AND t.suppression IS NULL`, projets).
 		Scan(&statistiques.Totaux.Total, &statistiques.Totaux.TotalPoints, &statistiques.Totaux.EnRetard)
 	if erreur != nil {
 		return nil, erreur

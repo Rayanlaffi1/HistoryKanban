@@ -94,6 +94,7 @@ export const schemaTache = z.object({
   echeance: z.string().nullable(),
   commit: z.string().default(""),
   position: z.number(),
+  suppression: z.string().nullable().default(null),
   createur: z.string(),
   creation: z.string(),
   modification: z.string(),

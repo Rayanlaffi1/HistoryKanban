@@ -96,6 +96,7 @@ type Tache struct {
 	Echeance     *time.Time `json:"echeance"`
 	Commit       string     `json:"commit"`
 	Position     int        `json:"position"`
+	Suppression  *time.Time `json:"suppression"`
 	Createur     string     `json:"createur"`
 	Creation     time.Time  `json:"creation"`
 	Modification time.Time  `json:"modification"`

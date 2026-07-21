@@ -64,6 +64,8 @@ func main() {
 		Stockage:      entrepot,
 	}
 
+	serveur.DemarrerPurgeCorbeille()
+
 	log.Printf("serveur HistoryKanban demarre sur le port %s", config.Port)
 	if erreur := serveur.Routeur().Run(":" + config.Port); erreur != nil {
 		log.Fatalf("serveur : %v", erreur)

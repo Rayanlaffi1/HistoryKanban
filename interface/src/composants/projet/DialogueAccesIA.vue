@@ -31,6 +31,8 @@ const pointsEntree = [
   { methode: "GET", chemin: "/membres", detail: "Membres du groupe : identifiant, nom, courriel, rôle et fonction" },
   { methode: "GET", chemin: "/taches", detail: "Toutes les tâches du tableau, filtrables par ?urgence=" },
   { methode: "POST", chemin: "/taches", detail: "Créer une tâche : { titre, colonne, description?, points?, urgence?, echeance?, lot?, affectations?, etiquettes? }" },
+  { methode: "GET", chemin: "/corbeille", detail: "Tâches supprimées encore restaurables" },
+  { methode: "PUT", chemin: "/taches/{id}/restaurer", detail: "Sortir une tâche de la corbeille" },
   { methode: "GET", chemin: "/taches/{id}", detail: "Détail d'une tâche" },
   { methode: "PUT", chemin: "/taches/{id}", detail: "Modifier une tâche : { titre, description?, points?, urgence?, echeance?, lot?, commit? }" },
   { methode: "PUT", chemin: "/taches/{id}/deplacer", detail: "Déplacer vers une colonne : { colonne, position }" },

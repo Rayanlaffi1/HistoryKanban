@@ -9,7 +9,7 @@ import (
 func (d *Depot) ProjetsParGroupe(ctx context.Context, groupe string) ([]modeles.Projet, error) {
 	lignes, erreur := d.bd.Query(ctx, `
 		SELECT p.id, p.groupe, p.nom, p.description, p.couleur, p.archive, p.depot, p.createur, p.creation,
-			(SELECT count(*) FROM taches WHERE projet = p.id)
+			(SELECT count(*) FROM taches WHERE projet = p.id AND suppression IS NULL)
 		FROM projets p WHERE p.groupe = $1 ORDER BY p.creation`, groupe)
 	if erreur != nil {
 		return nil, erreur
