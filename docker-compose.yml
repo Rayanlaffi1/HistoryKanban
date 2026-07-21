@@ -96,7 +96,7 @@ services:
     volumes:
       - rabbitmq:/var/lib/rabbitmq
     ports:
-      - "15672:15672"
+      - "15673:15672"
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 5s
@@ -135,7 +135,7 @@ services:
       traefik.http.routers.serveur.tls: "true"
       traefik.http.services.serveur.loadbalancer.server.port: "8080"
     ports:
-      - "8080:8080"
+      - "8085:8080"
     depends_on:
       basededonnees:
         condition: service_healthy
