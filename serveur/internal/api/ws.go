@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -23,6 +24,7 @@ func (s *Serveur) websocket(c *gin.Context) {
 	jeton := c.Query("jeton")
 	revendications, erreur := s.Verificateur.Verifier(jeton)
 	if erreur != nil {
+		log.Printf("verification du jeton websocket echouee : %v", erreur)
 		c.JSON(http.StatusUnauthorized, gin.H{"erreur": "jeton invalide"})
 		return
 	}

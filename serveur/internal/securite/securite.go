@@ -1,7 +1,9 @@
 package securite
 
 import (
+	"context"
 	"errors"
+	"log"
 	"time"
 
 	"github.com/MicahParks/keyfunc/v3"
@@ -24,13 +26,21 @@ type Verificateur struct {
 }
 
 func NouveauVerificateur(urlJWKS, emetteur string) (*Verificateur, error) {
-	var cles keyfunc.Keyfunc
 	var erreur error
-	for tentative := 0; tentative < 30; tentative++ {
+	for tentative := 0; tentative < 60; tentative++ {
+		var cles keyfunc.Keyfunc
 		cles, erreur = keyfunc.NewDefault([]string{urlJWKS})
 		if erreur == nil {
-			return &Verificateur{cles: cles, emetteur: emetteur}, nil
+			contexte, annuler := context.WithTimeout(context.Background(), 5*time.Second)
+			jeu, erreurLecture := cles.Storage().KeyReadAll(contexte)
+			annuler()
+			if erreurLecture == nil && len(jeu) > 0 {
+				log.Printf("JWKS charge avec %d cle(s) depuis %s", len(jeu), urlJWKS)
+				return &Verificateur{cles: cles, emetteur: emetteur}, nil
+			}
+			erreur = errors.New("jeu de cles JWKS vide, Keycloak pas encore pret")
 		}
+		log.Printf("chargement du JWKS en attente : %v", erreur)
 		time.Sleep(3 * time.Second)
 	}
 	return nil, erreur

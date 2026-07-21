@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strings"
 
@@ -28,6 +29,7 @@ func (s *Serveur) authentifier() gin.HandlerFunc {
 		}
 		revendications, erreur := s.Verificateur.Verifier(strings.TrimPrefix(entete, "Bearer "))
 		if erreur != nil {
+			log.Printf("verification du jeton echouee : %v", erreur)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"erreur": "jeton invalide"})
 			return
 		}
