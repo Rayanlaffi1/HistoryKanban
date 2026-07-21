@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from "vue"
+import { computed, defineAsyncComponent, reactive, ref, watch } from "vue"
 import type { Colonne, Etiquette, Lot, Membre, Tache } from "@/api/types"
 import {
   televerserFichier,
@@ -14,7 +14,7 @@ import { extraireErreur } from "@/utilitaires/erreurs"
 import { assainir } from "@/utilitaires/html"
 import Bouton from "@/composants/ui/Bouton.vue"
 import Champ from "@/composants/ui/Champ.vue"
-import ZoneRiche from "@/composants/ui/ZoneRiche.vue"
+const ZoneRiche = defineAsyncComponent(() => import("@/composants/ui/ZoneRiche.vue"))
 import Selection from "@/composants/ui/Selection.vue"
 import Dialogue from "@/composants/ui/Dialogue.vue"
 import Avatar from "@/composants/ui/Avatar.vue"
@@ -247,7 +247,7 @@ function supprimer() {
     <div v-show="!tache || onglet === 'detail'">
       <div v-if="!edition && tache" class="space-y-5">
         <div class="flex items-start justify-between gap-3">
-          <h3 class="text-lg font-semibold leading-snug">{{ tache.titre }}</h3>
+          <h3 class="min-w-0 break-words text-lg font-semibold leading-snug">{{ tache.titre }}</h3>
           <Badge v-if="tache.points > 0">{{ tache.points }} pt{{ tache.points > 1 ? "s" : "" }}</Badge>
         </div>
 

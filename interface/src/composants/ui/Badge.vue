@@ -6,7 +6,7 @@ defineProps<{
 
 <template>
   <span
-    class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
+    class="inline-flex max-w-full shrink-0 items-center gap-1 overflow-hidden whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium"
     :style="
       couleur
         ? { backgroundColor: couleur + '22', color: couleur, border: `1px solid ${couleur}55` }

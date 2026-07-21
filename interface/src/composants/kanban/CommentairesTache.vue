@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, defineAsyncComponent, ref } from "vue"
 import type { Tache } from "@/api/types"
 import {
   televerserFichier,
@@ -12,7 +12,7 @@ import { depuis } from "@/utilitaires/dates"
 import { assainir, contenuVide } from "@/utilitaires/html"
 import Avatar from "@/composants/ui/Avatar.vue"
 import Bouton from "@/composants/ui/Bouton.vue"
-import ZoneRiche from "@/composants/ui/ZoneRiche.vue"
+const ZoneRiche = defineAsyncComponent(() => import("@/composants/ui/ZoneRiche.vue"))
 
 const proprietes = defineProps<{
   tache: Tache

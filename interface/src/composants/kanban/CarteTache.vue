@@ -31,7 +31,7 @@ const resume = computed(() => texteBrut(proprietes.tache.description))
     class="flex cursor-pointer items-center justify-between gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 shadow-sm transition-shadow hover:shadow-md dark:border-neutral-700 dark:bg-neutral-800"
     @click="$emit('ouvrir')"
   >
-    <h4 class="truncate text-sm font-medium">{{ tache.titre }}</h4>
+    <h4 class="min-w-0 truncate text-sm font-medium">{{ tache.titre }}</h4>
     <div class="flex shrink-0 items-center gap-1.5">
       <span
         v-if="tache.echeance && estDepassee(tache.echeance)"
@@ -71,7 +71,7 @@ const resume = computed(() => texteBrut(proprietes.tache.description))
     </template>
 
     <div class="flex items-start justify-between gap-2">
-      <h4 class="text-sm font-medium leading-snug">{{ tache.titre }}</h4>
+      <h4 class="min-w-0 break-words text-sm font-medium leading-snug">{{ tache.titre }}</h4>
       <Badge v-if="tache.points > 0">{{ tache.points }} pt{{ tache.points > 1 ? "s" : "" }}</Badge>
     </div>
 

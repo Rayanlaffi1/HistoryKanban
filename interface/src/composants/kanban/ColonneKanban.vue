@@ -51,7 +51,7 @@ function surChangement(evenement: { newIndex?: number }) {
         <span class="h-2.5 w-2.5 shrink-0 rounded-full" :style="{ backgroundColor: colonne.couleur }"></span>
         <h3 class="truncate text-sm font-semibold">{{ colonne.nom }}</h3>
         <span
-          class="rounded-full bg-neutral-200 px-1.5 text-xs text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400"
+          class="shrink-0 whitespace-nowrap rounded-full bg-neutral-200 px-1.5 text-xs text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400"
           :class="colonne.limite !== null && taches.length > colonne.limite && '!bg-red-100 !text-red-700 dark:!bg-red-950 dark:!text-red-400'"
         >
           {{ taches.length }}<template v-if="colonne.limite !== null">/{{ colonne.limite }}</template>
