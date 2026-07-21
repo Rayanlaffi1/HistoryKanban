@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -136,6 +137,32 @@ func (s *Serveur) modifierRoleMembre(c *gin.Context) {
 	}
 	if erreur := s.Depot.ModifierRole(c.Request.Context(), identifiant, cible, corps.Role); erreur != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"erreur": "modification du role impossible"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"etat": "modifie"})
+}
+
+type corpsFonction struct {
+	Fonction string `json:"fonction"`
+}
+
+func (s *Serveur) modifierFonctionMembre(c *gin.Context) {
+	identifiant := c.Param("id")
+	if !s.exigerRoleGroupe(c, identifiant, "proprietaire") {
+		return
+	}
+	var corps corpsFonction
+	if erreur := c.ShouldBindJSON(&corps); erreur != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"erreur": "corps invalide"})
+		return
+	}
+	fonction := strings.TrimSpace(corps.Fonction)
+	if len([]rune(fonction)) > 60 {
+		c.JSON(http.StatusBadRequest, gin.H{"erreur": "la fonction ne doit pas depasser 60 caracteres"})
+		return
+	}
+	if erreur := s.Depot.ModifierFonction(c.Request.Context(), identifiant, c.Param("utilisateur"), fonction); erreur != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"erreur": "modification de la fonction impossible"})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"etat": "modifie"})

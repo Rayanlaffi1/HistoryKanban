@@ -96,7 +96,7 @@ func (d *Depot) RoleGroupe(ctx context.Context, groupe, utilisateur string) (str
 
 func (d *Depot) Membres(ctx context.Context, groupe string) ([]modeles.Membre, error) {
 	lignes, erreur := d.bd.Query(ctx, `
-		SELECT m.groupe, m.utilisateur, m.role, m.ajout, u.courriel, u.nom, u.prenom
+		SELECT m.groupe, m.utilisateur, m.role, m.fonction, m.ajout, u.courriel, u.nom, u.prenom
 		FROM membres m
 		JOIN utilisateurs u ON u.id = m.utilisateur
 		WHERE m.groupe = $1
@@ -108,7 +108,7 @@ func (d *Depot) Membres(ctx context.Context, groupe string) ([]modeles.Membre, e
 	membres := []modeles.Membre{}
 	for lignes.Next() {
 		var membre modeles.Membre
-		if erreur := lignes.Scan(&membre.Groupe, &membre.Utilisateur, &membre.Role, &membre.Ajout,
+		if erreur := lignes.Scan(&membre.Groupe, &membre.Utilisateur, &membre.Role, &membre.Fonction, &membre.Ajout,
 			&membre.Courriel, &membre.Nom, &membre.Prenom); erreur != nil {
 			return nil, erreur
 		}
@@ -144,6 +144,12 @@ func (d *Depot) AjouterMembre(ctx context.Context, groupe, utilisateur, role str
 func (d *Depot) ModifierRole(ctx context.Context, groupe, utilisateur, role string) error {
 	_, erreur := d.bd.Exec(ctx,
 		`UPDATE membres SET role = $3 WHERE groupe = $1 AND utilisateur = $2`, groupe, utilisateur, role)
+	return erreur
+}
+
+func (d *Depot) ModifierFonction(ctx context.Context, groupe, utilisateur, fonction string) error {
+	_, erreur := d.bd.Exec(ctx,
+		`UPDATE membres SET fonction = $3 WHERE groupe = $1 AND utilisateur = $2`, groupe, utilisateur, fonction)
 	return erreur
 }
 

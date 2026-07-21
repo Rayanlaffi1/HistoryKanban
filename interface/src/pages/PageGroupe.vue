@@ -4,6 +4,7 @@ import { useRoute, useRouter } from "vue-router"
 import {
   utiliserGroupes,
   utiliserMembres,
+  utiliserMutationFonction,
   utiliserMutationGroupe,
   utiliserMutationMembre,
   utiliserMutationProjet,
@@ -46,7 +47,14 @@ const mutationGroupe = utiliserMutationGroupe()
 const suppressionGroupe = utiliserSuppressionGroupe()
 const mutationMembre = utiliserMutationMembre()
 const mutationRole = utiliserMutationRole()
+const mutationFonction = utiliserMutationFonction()
 const retraitMembre = utiliserRetraitMembre()
+
+function enregistrerFonction(utilisateur: string, fonction: string, evenement: Event) {
+  const valeur = (evenement.target as HTMLInputElement).value.trim()
+  if (valeur === fonction) return
+  mutationFonction.mutate({ groupe: identifiant.value, utilisateur, fonction: valeur })
+}
 const mutationProjet = utiliserMutationProjet()
 
 const dialogueMembre = ref(false)
@@ -155,7 +163,7 @@ const droitsRoles = [
   { libelle: "Créer des projets, gérer les étiquettes et les lots", niveaux: ["membre", "administrateur", "proprietaire"] },
   { libelle: "Gérer les colonnes, modifier ou supprimer un projet", niveaux: ["administrateur", "proprietaire"] },
   { libelle: "Modifier le groupe, ajouter et retirer des membres", niveaux: ["administrateur", "proprietaire"] },
-  { libelle: "Attribuer les rôles et supprimer le groupe", niveaux: ["proprietaire"] },
+  { libelle: "Attribuer les rôles, définir la fonction des membres et supprimer le groupe", niveaux: ["proprietaire"] },
 ]
 
 function supprimerGroupe() {
@@ -260,9 +268,21 @@ function quitterGroupe() {
                   :title="connectes.includes(membre.utilisateur) ? 'En ligne' : 'Hors ligne'"
                 ></span>
               </span>
-              <div class="min-w-0">
+              <div class="min-w-0 flex-1">
                 <p class="truncate text-sm font-medium">{{ membre.prenom }} {{ membre.nom }}</p>
                 <p class="truncate text-xs text-neutral-500">{{ membre.courriel }}</p>
+                <input
+                  v-if="proprietaire"
+                  :value="membre.fonction"
+                  maxlength="60"
+                  placeholder="Fonction dans le groupe…"
+                  class="mt-1 w-full max-w-48 rounded border border-transparent bg-transparent px-1 py-0.5 text-xs text-neutral-600 placeholder:text-neutral-400 hover:border-neutral-300 focus:border-neutral-400 focus:bg-white focus:outline-none dark:text-neutral-300 dark:placeholder:text-neutral-600 dark:hover:border-neutral-700 dark:focus:border-neutral-600 dark:focus:bg-neutral-900"
+                  @change="enregistrerFonction(membre.utilisateur, membre.fonction, $event)"
+                  @keydown.enter="($event.target as HTMLInputElement).blur()"
+                />
+                <p v-else-if="membre.fonction" class="mt-0.5 truncate text-xs italic text-neutral-500">
+                  {{ membre.fonction }}
+                </p>
               </div>
             </div>
             <div class="flex shrink-0 items-center gap-2">

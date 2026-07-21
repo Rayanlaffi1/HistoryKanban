@@ -25,9 +25,12 @@ CREATE TABLE IF NOT EXISTS membres (
     groupe UUID NOT NULL REFERENCES groupes(id) ON DELETE CASCADE,
     utilisateur UUID NOT NULL REFERENCES utilisateurs(id) ON DELETE CASCADE,
     role TEXT NOT NULL DEFAULT 'membre' CHECK (role IN ('proprietaire', 'administrateur', 'membre', 'lecteur')),
+    fonction TEXT NOT NULL DEFAULT '',
     ajout TIMESTAMPTZ NOT NULL DEFAULT now(),
     PRIMARY KEY (groupe, utilisateur)
 );
+
+ALTER TABLE membres ADD COLUMN IF NOT EXISTS fonction TEXT NOT NULL DEFAULT '';
 
 CREATE TABLE IF NOT EXISTS projets (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

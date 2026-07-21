@@ -28,6 +28,7 @@ type Membre struct {
 	Groupe      string    `json:"groupe"`
 	Utilisateur string    `json:"utilisateur"`
 	Role        string    `json:"role"`
+	Fonction    string    `json:"fonction"`
 	Ajout       time.Time `json:"ajout"`
 	Courriel    string    `json:"courriel"`
 	Nom         string    `json:"nom"`

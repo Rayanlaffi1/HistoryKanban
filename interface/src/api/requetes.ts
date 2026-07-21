@@ -156,6 +156,14 @@ export function utiliserMutationRole() {
   })
 }
 
+export function utiliserMutationFonction() {
+  return useMutation({
+    mutationFn: (corps: { groupe: string; utilisateur: string; fonction: string }) =>
+      client.put(`/groupes/${corps.groupe}/membres/${corps.utilisateur}/fonction`, { fonction: corps.fonction }),
+    onSuccess: invalidation((variables: { groupe: string }) => [["membres", variables.groupe]]),
+  })
+}
+
 export function utiliserRetraitMembre() {
   return useMutation({
     mutationFn: (corps: { groupe: string; utilisateur: string }) =>

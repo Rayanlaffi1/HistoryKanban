@@ -26,6 +26,7 @@ export const schemaMembre = z.object({
   groupe: z.string(),
   utilisateur: z.string(),
   role: z.string(),
+  fonction: z.string().default(""),
   ajout: z.string(),
   courriel: z.string(),
   nom: z.string(),

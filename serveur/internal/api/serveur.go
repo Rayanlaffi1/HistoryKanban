@@ -59,6 +59,7 @@ func (s *Serveur) Routeur() *gin.Engine {
 	api.GET("/groupes/:id/membres", s.listerMembres)
 	api.POST("/groupes/:id/membres", s.ajouterMembre)
 	api.PUT("/groupes/:id/membres/:utilisateur", s.modifierRoleMembre)
+	api.PUT("/groupes/:id/membres/:utilisateur/fonction", s.modifierFonctionMembre)
 	api.DELETE("/groupes/:id/membres/:utilisateur", s.retirerMembre)
 	api.GET("/groupes/:id/statistiques", s.statistiquesGroupe)
 	api.GET("/groupes/:id/projets", s.listerProjets)
