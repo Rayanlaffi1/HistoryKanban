@@ -288,6 +288,13 @@ export function utiliserLectureTotale() {
   })
 }
 
+export async function televerserFichier(projet: string, fichier: File): Promise<string> {
+  const donnees = new FormData()
+  donnees.append("fichier", fichier)
+  const reponse = await client.post(`/projets/${projet}/fichiers`, donnees)
+  return reponse.data.url
+}
+
 export function utiliserMutationPreferences() {
   return useMutation({
     mutationFn: (corps: Omit<Preferences, "utilisateur">) => client.put("/moi/preferences", corps),

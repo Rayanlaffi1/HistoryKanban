@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 
 	"historykanban/serveur/internal/modeles"
 )
@@ -225,6 +226,39 @@ func (s *Serveur) reordonnerColonnes(c *gin.Context) {
 	}
 	s.publier("colonne.reordonnee", projet, "", corps.Ordre, nil, c)
 	c.JSON(http.StatusOK, gin.H{"etat": "modifie"})
+}
+
+func (s *Serveur) televerserFichier(c *gin.Context) {
+	projet, autorise := s.exigerRoleProjet(c, c.Param("id"), "membre")
+	if !autorise {
+		return
+	}
+	fichier, erreur := c.FormFile("fichier")
+	if erreur != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"erreur": "fichier requis"})
+		return
+	}
+	if fichier.Size > 10*1024*1024 {
+		c.JSON(http.StatusBadRequest, gin.H{"erreur": "fichier trop volumineux"})
+		return
+	}
+	typeContenu := fichier.Header.Get("Content-Type")
+	if !extensionsAutorisees[typeContenu] {
+		c.JSON(http.StatusBadRequest, gin.H{"erreur": "format d'image non pris en charge"})
+		return
+	}
+	contenu, erreur := fichier.Open()
+	if erreur != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"erreur": "lecture du fichier impossible"})
+		return
+	}
+	defer contenu.Close()
+	chemin := "libre/" + projet.ID + "/" + uuid.NewString()
+	if erreur := s.Stockage.Televerser(c.Request.Context(), chemin, contenu, fichier.Size, typeContenu); erreur != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"erreur": "televersement impossible"})
+		return
+	}
+	c.JSON(http.StatusCreated, gin.H{"url": s.Stockage.URL(chemin)})
 }
 
 type corpsEtiquette struct {

@@ -36,7 +36,7 @@ export const formulaireColonne = z.object({
 
 export const formulaireTache = z.object({
   titre: nomCourt("Le titre est requis", 200),
-  description: z.string().trim().max(5000, "5000 caractères maximum"),
+  description: z.string().max(20000, "Description trop longue"),
   colonne: z.string().min(1, "La colonne est requise"),
   points: entierFacultatif("Les points doivent être un entier positif"),
 })

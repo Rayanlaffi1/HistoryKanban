@@ -1,4 +1,5 @@
 import type { QueryClient } from "@tanstack/vue-query"
+import { useLocalStorage } from "@vueuse/core"
 import { jeton, seDeconnecter } from "@/securite/keycloak"
 import { utiliserMagasinNotifications } from "@/magasins/notifications"
 import { typesNotifications } from "@/api/types"
@@ -7,9 +8,13 @@ let prise: WebSocket | null = null
 let actif = false
 const abonnements = new Set<string>()
 
+export const notifierDeplacement = useLocalStorage("historykanban.notifdeplacement", true)
+
 interface MessageServeur {
   type: string
   projet?: string
+  acteurnom?: string
+  titre?: string
   donnees?: any
 }
 
@@ -52,6 +57,12 @@ export function demarrerTempsReel(clientRequetes: QueryClient) {
           clientRequetes.invalidateQueries({ queryKey: ["taches", message.projet] })
         } else {
           clientRequetes.invalidateQueries({ queryKey: ["projet", message.projet] })
+        }
+        if (message.type === "tache.deplacee" && notifierDeplacement.value) {
+          magasin.annoncer(
+            "Tâche déplacée",
+            [message.titre, message.acteurnom ? `par ${message.acteurnom}` : ""].filter(Boolean).join(" — "),
+          )
         }
       }
     }

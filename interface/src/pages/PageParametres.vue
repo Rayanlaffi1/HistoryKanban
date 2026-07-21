@@ -6,6 +6,7 @@ import { typesNotifications } from "@/api/types"
 import Bascule from "@/composants/ui/Bascule.vue"
 import Bouton from "@/composants/ui/Bouton.vue"
 import { utiliserMagasinNotifications } from "@/magasins/notifications"
+import { notifierDeplacement } from "@/tempsreel/prise"
 
 const sombre = useDark()
 const { data: profil } = utiliserProfil()
@@ -57,6 +58,14 @@ function enregistrer() {
       <h2 class="font-semibold">Apparence</h2>
       <div class="mt-4">
         <Bascule v-model="sombre" etiquette="Mode sombre" />
+      </div>
+    </section>
+
+    <section class="mt-6 rounded-xl border border-neutral-200 bg-white p-6 dark:border-neutral-800 dark:bg-neutral-900">
+      <h2 class="font-semibold">Notifications de l'application</h2>
+      <p class="mt-1 text-sm text-neutral-500">Alertes instantanées affichées dans l'interface.</p>
+      <div class="mt-4">
+        <Bascule v-model="notifierDeplacement" etiquette="Tâche déplacée d'une colonne à une autre" />
       </div>
     </section>
 

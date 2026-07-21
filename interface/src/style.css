@@ -22,3 +22,52 @@ body {
 .fantome {
   @apply opacity-40;
 }
+
+.texteriche h1 {
+  @apply mb-2 mt-3 text-xl font-bold first:mt-0;
+}
+
+.texteriche h2 {
+  @apply mb-2 mt-3 text-lg font-bold first:mt-0;
+}
+
+.texteriche h3 {
+  @apply mb-1 mt-2 text-base font-semibold first:mt-0;
+}
+
+.texteriche p {
+  @apply my-1;
+}
+
+.texteriche ul {
+  @apply my-1 list-disc pl-5;
+}
+
+.texteriche ol {
+  @apply my-1 list-decimal pl-5;
+}
+
+.texteriche blockquote {
+  @apply my-2 border-l-2 border-neutral-400 pl-3 italic text-neutral-600 dark:border-neutral-500 dark:text-neutral-400;
+}
+
+.texteriche code {
+  @apply rounded bg-neutral-200 px-1 py-0.5 font-mono text-xs dark:bg-neutral-800;
+}
+
+.texteriche pre {
+  @apply my-2 overflow-x-auto rounded-lg bg-neutral-200 p-3 font-mono text-xs dark:bg-neutral-800;
+}
+
+.texteriche img {
+  @apply my-2 max-h-64 max-w-full rounded-lg;
+}
+
+.texteriche a {
+  @apply text-neutral-900 underline dark:text-neutral-100;
+}
+
+.texteriche p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  @apply pointer-events-none float-left h-0 text-neutral-400 dark:text-neutral-500;
+}

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from "vue"
 import { useRoute } from "vue-router"
+import { useLocalStorage } from "@vueuse/core"
 import { VueDraggable } from "vue-draggable-plus"
 import {
   utiliserDeplacementTache,
@@ -16,6 +17,7 @@ import BoutonRetour from "@/composants/ui/BoutonRetour.vue"
 import Dialogue from "@/composants/ui/Dialogue.vue"
 import MenuContextuel, { type ElementMenu } from "@/composants/ui/MenuContextuel.vue"
 import ColonneKanban from "@/composants/kanban/ColonneKanban.vue"
+import { type Densite } from "@/composants/kanban/CarteTache.vue"
 import FiltresTaches from "@/composants/kanban/FiltresTaches.vue"
 import DialogueTache from "@/composants/kanban/DialogueTache.vue"
 import DialogueColonne from "@/composants/kanban/DialogueColonne.vue"
@@ -117,6 +119,13 @@ function ouvrirColonne(colonne: Colonne | null) {
 
 const dialogueReferentiels = ref(false)
 
+const densite = useLocalStorage<Densite>("historykanban.densite", "defaut")
+const densites: { valeur: Densite; libelle: string }[] = [
+  { valeur: "compacte", libelle: "Compacte" },
+  { valeur: "defaut", libelle: "Défaut" },
+  { valeur: "detaillee", libelle: "Détaillée" },
+]
+
 const suppressionColonne = utiliserSuppressionColonne()
 const colonneASupprimer = ref<Colonne | null>(null)
 
@@ -203,7 +212,22 @@ function supprimerColonne() {
             <h1 class="text-lg font-bold">{{ detail?.projet.nom }}</h1>
             <span class="text-sm text-neutral-500">{{ taches?.length ?? 0 }} tâches · {{ totalPoints }} points</span>
           </div>
-          <div class="flex gap-2">
+          <div class="flex items-center gap-2">
+            <div class="flex rounded-lg border border-neutral-300 p-0.5 dark:border-neutral-700">
+              <button
+                v-for="option in densites"
+                :key="option.valeur"
+                class="rounded-md px-2.5 py-1 text-xs font-medium transition-colors"
+                :class="
+                  densite === option.valeur
+                    ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900'
+                    : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100'
+                "
+                @click="densite = option.valeur"
+              >
+                {{ option.libelle }}
+              </button>
+            </div>
             <Bouton v-if="edition" taille="petite" variante="secondaire" @click="dialogueReferentiels = true">
               Étiquettes et lots
             </Bouton>
@@ -242,6 +266,7 @@ function supprimerColonne() {
           :lots="lotsParId"
           :edition="edition"
           :gestion="gestion"
+          :densite="densite"
           @deplacer="deplacer"
           @ouvrir="ouvrirTache"
           @creer="ouvrirCreation(colonne.id)"

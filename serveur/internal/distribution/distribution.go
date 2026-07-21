@@ -40,10 +40,12 @@ func (d *Distributeur) tempsreel(evenement evenements.Evenement) {
 	defer annuler()
 	if evenement.Projet != "" {
 		d.Concentrateur.DiffuserProjet(evenement.Projet, map[string]any{
-			"type":    evenement.Type,
-			"projet":  evenement.Projet,
-			"acteur":  evenement.Acteur,
-			"donnees": evenement.Donnees,
+			"type":      evenement.Type,
+			"projet":    evenement.Projet,
+			"acteur":    evenement.Acteur,
+			"acteurnom": evenement.ActeurNom,
+			"titre":     evenement.Titre,
+			"donnees":   evenement.Donnees,
 		})
 	}
 	for _, destinataire := range evenement.Destinataires {

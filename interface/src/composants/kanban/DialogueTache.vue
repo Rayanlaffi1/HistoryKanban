@@ -2,6 +2,7 @@
 import { computed, reactive, ref, watch } from "vue"
 import type { Colonne, Etiquette, Lot, Membre, Tache } from "@/api/types"
 import {
+  televerserFichier,
   utiliserCommentaires,
   utiliserMutationCommentaire,
   utiliserMutationTache,
@@ -11,12 +12,13 @@ import {
   utiliserTeleversementImage,
   utiliserProfil,
 } from "@/api/requetes"
+import { assainir, contenuVide } from "@/utilitaires/html"
 import { depuis, depuisChampDate, formaterDateHeure, versChampDate } from "@/utilitaires/dates"
 import { formulaireTache, valider } from "@/utilitaires/validation"
 import { extraireErreur } from "@/utilitaires/erreurs"
 import Bouton from "@/composants/ui/Bouton.vue"
 import Champ from "@/composants/ui/Champ.vue"
-import Zone from "@/composants/ui/Zone.vue"
+import ZoneRiche from "@/composants/ui/ZoneRiche.vue"
 import Selection from "@/composants/ui/Selection.vue"
 import Dialogue from "@/composants/ui/Dialogue.vue"
 import Avatar from "@/composants/ui/Avatar.vue"
@@ -131,7 +133,7 @@ function enregistrer() {
       projet: proprietes.projet,
       colonne: resultat.donnees.colonne,
       titre: resultat.donnees.titre,
-      description: resultat.donnees.description,
+      description: resultat.donnees.description === "" ? "" : assainir(resultat.donnees.description),
       lot: formulaire.lot || null,
       points: Number(resultat.donnees.points) || 0,
       echeance: depuisChampDate(formulaire.echeance),
@@ -186,10 +188,14 @@ function televerser(evenement: Event) {
   if (champFichier.value) champFichier.value.value = ""
 }
 
+function envoyerImageContenu(fichier: File) {
+  return televerserFichier(proprietes.projet, fichier)
+}
+
 function commenter() {
-  if (!nouveauCommentaire.value.trim() || !proprietes.tache) return
+  if (contenuVide(nouveauCommentaire.value) || !proprietes.tache) return
   mutationCommentaire.mutate(
-    { tache: proprietes.tache.id, contenu: nouveauCommentaire.value.trim() },
+    { tache: proprietes.tache.id, contenu: assainir(nouveauCommentaire.value) },
     { onSuccess: () => (nouveauCommentaire.value = "") },
   )
 }
@@ -204,7 +210,13 @@ function commenter() {
   >
     <div class="space-y-4">
       <Champ v-model="formulaire.titre" etiquette="Titre" indication="Que faut-il faire ?" :erreur="erreurs.titre" />
-      <Zone v-model="formulaire.description" etiquette="Description" :lignes="4" :erreur="erreurs.description" />
+      <ZoneRiche
+        v-model="formulaire.description"
+        etiquette="Description"
+        indication="Décrivez la tâche, insérez des images…"
+        :erreur="erreurs.description"
+        :televerser="envoyerImageContenu"
+      />
 
       <div class="grid gap-4 sm:grid-cols-2">
         <Selection v-model="formulaire.colonne" etiquette="Colonne">
@@ -329,17 +341,20 @@ function commenter() {
                   Supprimer
                 </button>
               </p>
-              <p class="text-sm">{{ commentaire.contenu }}</p>
+              <div class="texteriche text-sm" v-html="assainir(commentaire.contenu)"></div>
             </div>
           </li>
         </ul>
-        <form v-if="edition" class="mt-3 flex gap-2" @submit.prevent="commenter">
-          <input
+        <form v-if="edition" class="mt-3 space-y-2" @submit.prevent="commenter">
+          <ZoneRiche
             v-model="nouveauCommentaire"
-            placeholder="Écrire un commentaire…"
-            class="h-9 flex-1 rounded-lg border border-neutral-300 bg-white px-3 text-sm focus:border-neutral-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-900"
+            compact
+            indication="Écrire un commentaire…"
+            :televerser="envoyerImageContenu"
           />
-          <Bouton taille="petite" type="submit" :desactive="mutationCommentaire.isPending.value">Envoyer</Bouton>
+          <div class="flex justify-end">
+            <Bouton taille="petite" type="submit" :desactive="mutationCommentaire.isPending.value">Envoyer</Bouton>
+          </div>
         </form>
       </div>
 

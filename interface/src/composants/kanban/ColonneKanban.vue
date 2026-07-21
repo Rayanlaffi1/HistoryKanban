@@ -2,7 +2,7 @@
 import { ref, watch } from "vue"
 import { VueDraggable } from "vue-draggable-plus"
 import type { Colonne, Etiquette, Lot, Membre, Tache } from "@/api/types"
-import CarteTache from "@/composants/kanban/CarteTache.vue"
+import CarteTache, { type Densite } from "@/composants/kanban/CarteTache.vue"
 
 const proprietes = defineProps<{
   colonne: Colonne
@@ -12,6 +12,7 @@ const proprietes = defineProps<{
   lots: Record<string, Lot>
   edition: boolean
   gestion: boolean
+  densite: Densite
 }>()
 
 const emissions = defineEmits<{
@@ -82,6 +83,7 @@ function surChangement(evenement: { newIndex?: number }) {
         :etiquettes="etiquettes"
         :membres="membres"
         :lots="lots"
+        :densite="densite"
         @ouvrir="emissions('ouvrir', tache)"
       />
     </VueDraggable>

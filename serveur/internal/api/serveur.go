@@ -71,6 +71,7 @@ func (s *Serveur) Routeur() *gin.Engine {
 	api.POST("/projets/:id/lots", s.creerLot)
 	api.GET("/projets/:id/taches", s.listerTaches)
 	api.POST("/projets/:id/taches", s.creerTache)
+	api.POST("/projets/:id/fichiers", s.televerserFichier)
 
 	api.PUT("/colonnes/:id", s.modifierColonne)
 	api.DELETE("/colonnes/:id", s.supprimerColonne)
