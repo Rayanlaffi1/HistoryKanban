@@ -52,6 +52,7 @@ const formulaire = reactive({
   lot: "",
   points: "0",
   echeance: "",
+  commit: "",
   affectations: [] as string[],
   etiquettes: [] as string[],
 })
@@ -93,6 +94,7 @@ watch(
     formulaire.lot = proprietes.tache?.lot ?? ""
     formulaire.points = String(proprietes.tache?.points ?? 0)
     formulaire.echeance = versChampDate(proprietes.tache?.echeance)
+    formulaire.commit = proprietes.tache?.commit ?? ""
     formulaire.affectations = [...(proprietes.tache?.affectations ?? [])]
     formulaire.etiquettes = [...(proprietes.tache?.etiquettes ?? [])]
   },
@@ -166,6 +168,7 @@ function enregistrer() {
       lot: formulaire.lot || null,
       points: Number(resultat.donnees.points) || 0,
       echeance: depuisChampDate(formulaire.echeance),
+      commit: formulaire.commit.trim(),
       affectations: formulaire.affectations,
       etiquettes: formulaire.etiquettes,
     },
@@ -262,6 +265,10 @@ function supprimer() {
           <dd class="font-medium">{{ tache.echeance ? formaterDateHeure(tache.echeance) : "—" }}</dd>
           <dt class="text-neutral-500">Créée le</dt>
           <dd class="font-medium">{{ formaterDateHeure(tache.creation) }}</dd>
+          <template v-if="tache.commit">
+            <dt class="text-neutral-500">Commit</dt>
+            <dd class="font-mono text-xs font-medium">{{ tache.commit }}</dd>
+          </template>
         </dl>
 
         <div v-if="etiquettesCourantes.length">
@@ -320,6 +327,7 @@ function supprimer() {
             </Selection>
             <Champ v-model="formulaire.echeance" etiquette="Échéance" type="datetime-local" />
             <Champ v-model="formulaire.points" etiquette="Points" type="number" :erreur="erreurs.points" />
+            <Champ v-if="tache" v-model="formulaire.commit" etiquette="Commit" indication="abc1234" />
           </div>
         </SectionFormulaire>
 

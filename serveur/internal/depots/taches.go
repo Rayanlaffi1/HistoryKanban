@@ -9,7 +9,7 @@ import (
 )
 
 const selectionTaches = `
-	SELECT t.id, t.projet, t.colonne, t.lot, t.titre, t.description, t.points, t.echeance,
+	SELECT t.id, t.projet, t.colonne, t.lot, t.titre, t.description, t.points, t.echeance, t.commit,
 		t.position, t.createur, t.creation, t.modification,
 		coalesce(array_agg(DISTINCT a.utilisateur::text) FILTER (WHERE a.utilisateur IS NOT NULL), '{}'),
 		coalesce(array_agg(DISTINCT e.etiquette::text) FILTER (WHERE e.etiquette IS NOT NULL), '{}')
@@ -63,7 +63,7 @@ func (d *Depot) Taches(ctx context.Context, projet string, filtre modeles.Filtre
 	for lignes.Next() {
 		var tache modeles.Tache
 		if erreur := lignes.Scan(&tache.ID, &tache.Projet, &tache.Colonne, &tache.Lot, &tache.Titre,
-			&tache.Description, &tache.Points, &tache.Echeance, &tache.Position, &tache.Createur,
+			&tache.Description, &tache.Points, &tache.Echeance, &tache.Commit, &tache.Position, &tache.Createur,
 			&tache.Creation, &tache.Modification, &tache.Affectations, &tache.Etiquettes); erreur != nil {
 			return nil, erreur
 		}
@@ -108,7 +108,7 @@ func (d *Depot) Tache(ctx context.Context, id string) (*modeles.Tache, error) {
 	var tache modeles.Tache
 	erreur := d.bd.QueryRow(ctx, selectionTaches+"\n\tWHERE t.id = $1\n\tGROUP BY t.id", id).
 		Scan(&tache.ID, &tache.Projet, &tache.Colonne, &tache.Lot, &tache.Titre,
-			&tache.Description, &tache.Points, &tache.Echeance, &tache.Position, &tache.Createur,
+			&tache.Description, &tache.Points, &tache.Echeance, &tache.Commit, &tache.Position, &tache.Createur,
 			&tache.Creation, &tache.Modification, &tache.Affectations, &tache.Etiquettes)
 	if erreur != nil {
 		return nil, erreur
@@ -157,9 +157,15 @@ func (d *Depot) CreerTache(ctx context.Context, tache modeles.Tache) (*modeles.T
 
 func (d *Depot) ModifierTache(ctx context.Context, tache modeles.Tache) error {
 	_, erreur := d.bd.Exec(ctx, `
-		UPDATE taches SET titre = $2, description = $3, points = $4, echeance = $5, lot = $6, modification = now()
+		UPDATE taches SET titre = $2, description = $3, points = $4, echeance = $5, lot = $6, commit = $7, modification = now()
 		WHERE id = $1`,
-		tache.ID, tache.Titre, tache.Description, tache.Points, tache.Echeance, tache.Lot)
+		tache.ID, tache.Titre, tache.Description, tache.Points, tache.Echeance, tache.Lot, tache.Commit)
+	return erreur
+}
+
+func (d *Depot) ModifierCommit(ctx context.Context, id, commit string) error {
+	_, erreur := d.bd.Exec(ctx,
+		`UPDATE taches SET commit = $2, modification = now() WHERE id = $1`, id, commit)
 	return erreur
 }
 

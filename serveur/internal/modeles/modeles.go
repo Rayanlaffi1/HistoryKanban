@@ -91,6 +91,7 @@ type Tache struct {
 	Description  string     `json:"description"`
 	Points       int        `json:"points"`
 	Echeance     *time.Time `json:"echeance"`
+	Commit       string     `json:"commit"`
 	Position     int        `json:"position"`
 	Createur     string     `json:"createur"`
 	Creation     time.Time  `json:"creation"`
@@ -98,6 +99,13 @@ type Tache struct {
 	Affectations []string   `json:"affectations"`
 	Etiquettes   []string   `json:"etiquettes"`
 	Images       []Image    `json:"images"`
+}
+
+type Cle struct {
+	Projet      string    `json:"projet"`
+	Utilisateur string    `json:"utilisateur"`
+	Cle         string    `json:"cle"`
+	Creation    time.Time `json:"creation"`
 }
 
 type Commentaire struct {

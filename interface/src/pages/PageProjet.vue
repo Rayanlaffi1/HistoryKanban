@@ -23,6 +23,7 @@ import FiltresTaches from "@/composants/kanban/FiltresTaches.vue"
 import DialogueTache from "@/composants/kanban/DialogueTache.vue"
 import DialogueColonne from "@/composants/kanban/DialogueColonne.vue"
 import DialogueReferentiels from "@/composants/kanban/DialogueReferentiels.vue"
+import DialogueAccesIA from "@/composants/projet/DialogueAccesIA.vue"
 
 const route = useRoute()
 const identifiant = computed(() => String(route.params.id))
@@ -119,6 +120,7 @@ function ouvrirColonne(colonne: Colonne | null) {
 }
 
 const dialogueReferentiels = ref(false)
+const dialogueAccesIA = ref(false)
 
 const densite = useLocalStorage<Densite>("historykanban.densite", "defaut")
 const densites: { valeur: Densite; libelle: string }[] = [
@@ -243,6 +245,9 @@ function supprimerColonne() {
                 {{ option.libelle }}
               </button>
             </div>
+            <Bouton v-if="edition" taille="petite" variante="secondaire" @click="dialogueAccesIA = true">
+              Accès IA
+            </Bouton>
             <Bouton v-if="edition" taille="petite" variante="secondaire" @click="dialogueReferentiels = true">
               Étiquettes et lots
             </Bouton>
@@ -310,6 +315,8 @@ function supprimerColonne() {
       :colonne="colonneOuverte"
       @fermer="dialogueColonne = false"
     />
+
+    <DialogueAccesIA :ouvert="dialogueAccesIA" :projet="identifiant" @fermer="dialogueAccesIA = false" />
 
     <DialogueReferentiels
       :ouvert="dialogueReferentiels"

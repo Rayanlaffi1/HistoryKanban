@@ -89,6 +89,7 @@ export const schemaTache = z.object({
   description: z.string(),
   points: z.number(),
   echeance: z.string().nullable(),
+  commit: z.string().default(""),
   position: z.number(),
   createur: z.string(),
   creation: z.string(),
@@ -166,6 +167,17 @@ export const schemaStatistiques = z.object({
   }),
 })
 
+export const schemaCle = z.object({
+  projet: z.string(),
+  utilisateur: z.string(),
+  cle: z.string(),
+  creation: z.string(),
+})
+
+export const schemaReponseCle = z.object({
+  cle: schemaCle.nullable(),
+})
+
 export const schemaDetailProjet = z.object({
   projet: schemaProjet,
   colonnes: z.array(schemaColonne),
@@ -187,6 +199,7 @@ export type Image = z.infer<typeof schemaImage>
 export type Tache = z.infer<typeof schemaTache>
 export type Commentaire = z.infer<typeof schemaCommentaire>
 export type Activite = z.infer<typeof schemaActivite>
+export type Cle = z.infer<typeof schemaCle>
 export type Statistiques = z.infer<typeof schemaStatistiques>
 export type LigneClassement = z.infer<typeof schemaLigneClassement>
 

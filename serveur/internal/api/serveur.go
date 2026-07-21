@@ -75,6 +75,9 @@ func (s *Serveur) Routeur() *gin.Engine {
 	api.GET("/projets/:id/taches", s.listerTaches)
 	api.POST("/projets/:id/taches", s.creerTache)
 	api.POST("/projets/:id/fichiers", s.televerserFichier)
+	api.GET("/projets/:id/cle", s.obtenirCle)
+	api.POST("/projets/:id/cle", s.genererCle)
+	api.DELETE("/projets/:id/cle", s.supprimerCle)
 
 	api.PUT("/colonnes/:id", s.modifierColonne)
 	api.DELETE("/colonnes/:id", s.supprimerColonne)
@@ -86,12 +89,25 @@ func (s *Serveur) Routeur() *gin.Engine {
 	api.PUT("/taches/:id", s.modifierTache)
 	api.DELETE("/taches/:id", s.supprimerTache)
 	api.PUT("/taches/:id/deplacer", s.deplacerTache)
+	api.PUT("/taches/:id/commit", s.agentRenseignerCommit)
 	api.GET("/taches/:id/activites", s.listerActivites)
 	api.GET("/taches/:id/commentaires", s.listerCommentaires)
 	api.POST("/taches/:id/commentaires", s.creerCommentaire)
 	api.DELETE("/commentaires/:id", s.supprimerCommentaire)
 	api.POST("/taches/:id/images", s.televerserImage)
 	api.DELETE("/images/:id", s.supprimerImage)
+
+	agent := moteur.Group("/api/agent", s.authentifierAgent())
+	agent.GET("/projet", s.forcerProjetAgent(s.obtenirProjet))
+	agent.GET("/taches", s.forcerProjetAgent(s.listerTaches))
+	agent.POST("/taches", s.forcerProjetAgent(s.creerTache))
+	agent.GET("/taches/:id", s.verifierTacheAgent(s.agentObtenirTache))
+	agent.PUT("/taches/:id", s.verifierTacheAgent(s.modifierTache))
+	agent.PUT("/taches/:id/deplacer", s.verifierTacheAgent(s.deplacerTache))
+	agent.PUT("/taches/:id/commit", s.verifierTacheAgent(s.agentRenseignerCommit))
+	agent.GET("/taches/:id/commentaires", s.verifierTacheAgent(s.listerCommentaires))
+	agent.POST("/taches/:id/commentaires", s.verifierTacheAgent(s.creerCommentaire))
+	agent.GET("/taches/:id/activites", s.verifierTacheAgent(s.listerActivites))
 
 	return moteur
 }

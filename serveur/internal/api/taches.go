@@ -3,6 +3,7 @@ package api
 import (
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -52,6 +53,7 @@ type corpsTache struct {
 	Lot          *string    `json:"lot"`
 	Points       int        `json:"points"`
 	Echeance     *time.Time `json:"echeance"`
+	Commit       *string    `json:"commit"`
 	Affectations []string   `json:"affectations"`
 	Etiquettes   []string   `json:"etiquettes"`
 }
@@ -111,6 +113,10 @@ func (s *Serveur) modifierTache(c *gin.Context) {
 		return
 	}
 	contexte := c.Request.Context()
+	commit := tache.Commit
+	if corps.Commit != nil {
+		commit = strings.TrimSpace(*corps.Commit)
+	}
 	if erreur := s.Depot.ModifierTache(contexte, modeles.Tache{
 		ID:          tache.ID,
 		Titre:       corps.Titre,
@@ -118,6 +124,7 @@ func (s *Serveur) modifierTache(c *gin.Context) {
 		Points:      corps.Points,
 		Echeance:    corps.Echeance,
 		Lot:         corps.Lot,
+		Commit:      commit,
 	}); erreur != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"erreur": "modification de la tache impossible"})
 		return

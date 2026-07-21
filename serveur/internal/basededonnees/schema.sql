@@ -77,6 +77,7 @@ CREATE TABLE IF NOT EXISTS taches (
     description TEXT NOT NULL DEFAULT '',
     points INTEGER NOT NULL DEFAULT 0,
     echeance TIMESTAMPTZ,
+    commit TEXT NOT NULL DEFAULT '',
     position INTEGER NOT NULL DEFAULT 0,
     createur UUID NOT NULL REFERENCES utilisateurs(id),
     creation TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -128,6 +129,16 @@ CREATE TABLE IF NOT EXISTS notifications (
     contenu JSONB NOT NULL DEFAULT '{}',
     lue BOOLEAN NOT NULL DEFAULT false,
     creation TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE taches ADD COLUMN IF NOT EXISTS commit TEXT NOT NULL DEFAULT '';
+
+CREATE TABLE IF NOT EXISTS cles (
+    projet UUID NOT NULL REFERENCES projets(id) ON DELETE CASCADE,
+    utilisateur UUID NOT NULL REFERENCES utilisateurs(id) ON DELETE CASCADE,
+    cle TEXT NOT NULL UNIQUE,
+    creation TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (projet, utilisateur)
 );
 
 CREATE TABLE IF NOT EXISTS preferences (

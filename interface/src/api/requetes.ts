@@ -12,6 +12,7 @@ import {
   schemaPreferences,
   schemaProfil,
   schemaProjet,
+  schemaReponseCle,
   schemaStatistiques,
   schemaTache,
   type FiltreTaches,
@@ -100,6 +101,28 @@ export function utiliserStatistiques(groupe: Ref<string>, parametres: Ref<Parame
         ).data,
       ),
     enabled: computed(() => groupe.value !== ""),
+  })
+}
+
+export function utiliserCle(projet: Ref<string>, active: Ref<boolean>) {
+  return useQuery({
+    queryKey: computed(() => ["cle", projet.value]),
+    queryFn: async () => schemaReponseCle.parse((await client.get(`/projets/${projet.value}/cle`)).data).cle,
+    enabled: computed(() => projet.value !== "" && active.value),
+  })
+}
+
+export function utiliserGenerationCle() {
+  return useMutation({
+    mutationFn: (projet: string) => client.post(`/projets/${projet}/cle`),
+    onSuccess: invalidation((projet: string) => [["cle", projet]]),
+  })
+}
+
+export function utiliserSuppressionCle() {
+  return useMutation({
+    mutationFn: (projet: string) => client.delete(`/projets/${projet}/cle`),
+    onSuccess: invalidation((projet: string) => [["cle", projet]]),
   })
 }
 
@@ -253,6 +276,7 @@ export interface CorpsTache {
   lot: string | null
   points: number
   echeance: string | null
+  commit?: string
   affectations: string[]
   etiquettes: string[]
 }
