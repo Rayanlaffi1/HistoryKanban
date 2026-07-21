@@ -109,8 +109,14 @@ export const schemaTache = z.object({
   modification: z.string(),
   affectations: z.array(z.string()),
   etiquettes: z.array(z.string()),
-  images: z.array(schemaImage),
-  soustaches: z.array(schemaSousTache).default([]),
+  images: z
+    .array(schemaImage)
+    .nullish()
+    .transform((valeur) => valeur ?? []),
+  soustaches: z
+    .array(schemaSousTache)
+    .nullish()
+    .transform((valeur) => valeur ?? []),
 })
 
 export const schemaResultat = z.object({

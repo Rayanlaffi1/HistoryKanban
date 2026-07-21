@@ -231,6 +231,7 @@ func (d *Depot) Corbeille(ctx context.Context, projet string) ([]modeles.Tache, 
 			return nil, erreur
 		}
 		tache.Images = []modeles.Image{}
+		tache.SousTaches = []modeles.SousTache{}
 		taches = append(taches, tache)
 	}
 	return taches, lignes.Err()
