@@ -1,0 +1,9 @@
+tls:
+  certificates:
+    - certFile: /etc/traefik/certificats/historykanban.crt
+      keyFile: /etc/traefik/certificats/historykanban.key
+  stores:
+    default:
+      defaultCertificate:
+        certFile: /etc/traefik/certificats/historykanban.crt
+        keyFile: /etc/traefik/certificats/historykanban.key

@@ -1,6 +1,18 @@
 name: historykanban
 
 services:
+  traefik:
+    image: traefik:v3.1
+    volumes:
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml
+      - ./traefik/dynamique.yml:/etc/traefik/dynamique.yml
+      - ./traefik/certificats:/etc/traefik/certificats
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8083:8080"
+
   basededonnees:
     image: postgres:16-alpine
     environment:
@@ -30,11 +42,15 @@ services:
       KC_DB_PASSWORD: ${BDMDP}
       KC_HTTP_ENABLED: "true"
       KC_HOSTNAME_STRICT: "false"
+      KC_PROXY_HEADERS: xforwarded
     volumes:
       - ./keycloak/royaume:/opt/keycloak/data/import
       - ./keycloak/themes/historykanban:/opt/keycloak/themes/historykanban
-    ports:
-      - "8081:8080"
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.keycloak.rule: Host(`auth.historykanban.localhost`)
+      traefik.http.routers.keycloak.tls: "true"
+      traefik.http.services.keycloak.loadbalancer.server.port: "8080"
     depends_on:
       basededonnees:
         condition: service_healthy
@@ -47,8 +63,12 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIOSECRET}
     volumes:
       - minio:/data
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.minio.rule: Host(`images.historykanban.localhost`)
+      traefik.http.routers.minio.tls: "true"
+      traefik.http.services.minio.loadbalancer.server.port: "9000"
     ports:
-      - "9000:9000"
       - "9001:9001"
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
@@ -76,7 +96,6 @@ services:
     volumes:
       - rabbitmq:/var/lib/rabbitmq
     ports:
-      - "5672:5672"
       - "15672:15672"
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
@@ -86,9 +105,11 @@ services:
 
   courriel:
     image: mailhog/mailhog:v1.0.1
-    ports:
-      - "1025:1025"
-      - "8025:8025"
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.courriel.rule: Host(`courriel.historykanban.localhost`)
+      traefik.http.routers.courriel.tls: "true"
+      traefik.http.services.courriel.loadbalancer.server.port: "8025"
 
   serveur:
     build: ./serveur
@@ -96,10 +117,10 @@ services:
       PORTSERVEUR: "8080"
       BDURL: postgres://${BDUTILISATEUR}:${BDMDP}@basededonnees:5432/${BDNOM}?sslmode=disable
       KEYCLOAKURL: http://keycloak:8080
-      KEYCLOAKURLPUBLIQUE: http://localhost:8081
+      KEYCLOAKURLPUBLIQUE: https://auth.historykanban.localhost
       KEYCLOAKROYAUME: historykanban
       MINIOHOTE: minio:9000
-      MINIOHOTEPUBLIQUE: localhost:9000
+      MINIOURLPUBLIQUE: https://images.historykanban.localhost
       MINIOCLE: ${MINIOCLE}
       MINIOSECRET: ${MINIOSECRET}
       MINIOSEAU: images
@@ -107,7 +128,12 @@ services:
       SMTPHOTE: courriel
       SMTPPORT: "1025"
       SMTPEXPEDITEUR: notifications@historykanban.fr
-      ORIGINES: http://localhost:8090,http://localhost:5173
+      ORIGINES: https://historykanban.localhost,http://localhost:5173
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.serveur.rule: Host(`api.historykanban.localhost`)
+      traefik.http.routers.serveur.tls: "true"
+      traefik.http.services.serveur.loadbalancer.server.port: "8080"
     ports:
       - "8080:8080"
     depends_on:
@@ -125,13 +151,16 @@ services:
     build:
       context: ./interface
       args:
-        VITE_URLAPI: http://localhost:8080
-        VITE_URLWS: ws://localhost:8080
-        VITE_KEYCLOAKURL: http://localhost:8081
+        VITE_URLAPI: https://api.historykanban.localhost
+        VITE_URLWS: wss://api.historykanban.localhost
+        VITE_KEYCLOAKURL: https://auth.historykanban.localhost
         VITE_KEYCLOAKROYAUME: historykanban
         VITE_KEYCLOAKCLIENT: interface
-    ports:
-      - "8090:80"
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.interface.rule: Host(`historykanban.localhost`)
+      traefik.http.routers.interface.tls: "true"
+      traefik.http.services.interface.loadbalancer.server.port: "80"
     depends_on:
       - serveur
 
