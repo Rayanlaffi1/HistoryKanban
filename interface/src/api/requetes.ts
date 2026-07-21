@@ -197,7 +197,7 @@ export function utiliserRetraitMembre() {
 
 export function utiliserMutationProjet() {
   return useMutation({
-    mutationFn: (corps: { id?: string; groupe: string; nom: string; description: string; couleur: string; archive?: boolean }) =>
+    mutationFn: (corps: { id?: string; groupe: string; nom: string; description: string; couleur: string; depot?: string; archive?: boolean }) =>
       corps.id ? client.put(`/projets/${corps.id}`, corps) : client.post(`/groupes/${corps.groupe}/projets`, corps),
     onSuccess: invalidation((variables: { id?: string; groupe: string }) => [
       ["projets", variables.groupe],

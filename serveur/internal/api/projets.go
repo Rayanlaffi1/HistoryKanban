@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -27,6 +28,7 @@ type corpsProjet struct {
 	Nom         string `json:"nom" binding:"required"`
 	Description string `json:"description"`
 	Couleur     string `json:"couleur"`
+	Depot       string `json:"depot"`
 	Archive     bool   `json:"archive"`
 }
 
@@ -107,7 +109,7 @@ func (s *Serveur) modifierProjet(c *gin.Context) {
 	if corps.Couleur == "" {
 		corps.Couleur = projet.Couleur
 	}
-	if erreur := s.Depot.ModifierProjet(c.Request.Context(), projet.ID, corps.Nom, corps.Description, corps.Couleur, corps.Archive); erreur != nil {
+	if erreur := s.Depot.ModifierProjet(c.Request.Context(), projet.ID, corps.Nom, corps.Description, corps.Couleur, strings.TrimSpace(corps.Depot), corps.Archive); erreur != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"erreur": "modification du projet impossible"})
 		return
 	}

@@ -42,6 +42,7 @@ type Projet struct {
 	Description string    `json:"description"`
 	Couleur     string    `json:"couleur"`
 	Archive     bool      `json:"archive"`
+	Depot       string    `json:"depot"`
 	Createur    string    `json:"createur"`
 	Creation    time.Time `json:"creation"`
 	NbTaches    int       `json:"nbtaches"`

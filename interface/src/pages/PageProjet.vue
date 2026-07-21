@@ -24,6 +24,7 @@ import DialogueTache from "@/composants/kanban/DialogueTache.vue"
 import DialogueColonne from "@/composants/kanban/DialogueColonne.vue"
 import DialogueReferentiels from "@/composants/kanban/DialogueReferentiels.vue"
 import DialogueAccesIA from "@/composants/projet/DialogueAccesIA.vue"
+import DialogueParametresProjet from "@/composants/projet/DialogueParametresProjet.vue"
 
 const route = useRoute()
 const identifiant = computed(() => String(route.params.id))
@@ -121,6 +122,7 @@ function ouvrirColonne(colonne: Colonne | null) {
 
 const dialogueReferentiels = ref(false)
 const dialogueAccesIA = ref(false)
+const dialogueParametres = ref(false)
 
 const densite = useLocalStorage<Densite>("historykanban.densite", "defaut")
 const densites: { valeur: Densite; libelle: string }[] = [
@@ -254,6 +256,9 @@ function supprimerColonne() {
             <Bouton v-if="gestion" taille="petite" variante="secondaire" @click="ouvrirColonne(null)">
               Nouvelle colonne
             </Bouton>
+            <Bouton v-if="gestion" taille="petite" variante="secondaire" @click="dialogueParametres = true">
+              Paramètres
+            </Bouton>
           </div>
         </div>
         <div class="mt-3">
@@ -306,7 +311,14 @@ function supprimerColonne() {
       :tache="tacheOuverte"
       :colonne-initiale="colonneInitiale"
       :edition="edition"
+      :depot="detail?.projet.depot ?? ''"
       @fermer="dialogueTache = false"
+    />
+
+    <DialogueParametresProjet
+      :ouvert="dialogueParametres"
+      :projet="detail?.projet ?? null"
+      @fermer="dialogueParametres = false"
     />
 
     <DialogueColonne

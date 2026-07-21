@@ -33,6 +33,7 @@ const proprietes = defineProps<{
   tache: Tache | null
   colonneInitiale: string
   edition: boolean
+  depot?: string
 }>()
 
 const emissions = defineEmits<{ fermer: [] }>()
@@ -100,6 +101,11 @@ watch(
   },
   { immediate: true },
 )
+
+const lienCommit = computed(() => {
+  if (!proprietes.depot || !proprietes.tache?.commit) return ""
+  return `${proprietes.depot.replace(/\/+$/, "")}/commit/${proprietes.tache.commit}`
+})
 
 const nomColonne = computed(
   () => proprietes.colonnes.find((colonne) => colonne.id === proprietes.tache?.colonne)?.nom ?? "",
@@ -267,7 +273,12 @@ function supprimer() {
           <dd class="font-medium">{{ formaterDateHeure(tache.creation) }}</dd>
           <template v-if="tache.commit">
             <dt class="text-neutral-500">Commit</dt>
-            <dd class="font-mono text-xs font-medium">{{ tache.commit }}</dd>
+            <dd class="font-mono text-xs font-medium">
+              <a v-if="lienCommit" :href="lienCommit" target="_blank" rel="noopener" class="underline decoration-neutral-400 underline-offset-2 hover:decoration-neutral-900 dark:hover:decoration-neutral-100">
+                {{ tache.commit }}
+              </a>
+              <template v-else>{{ tache.commit }}</template>
+            </dd>
           </template>
         </dl>
 

@@ -8,7 +8,7 @@ import (
 
 func (d *Depot) ProjetsParGroupe(ctx context.Context, groupe string) ([]modeles.Projet, error) {
 	lignes, erreur := d.bd.Query(ctx, `
-		SELECT p.id, p.groupe, p.nom, p.description, p.couleur, p.archive, p.createur, p.creation,
+		SELECT p.id, p.groupe, p.nom, p.description, p.couleur, p.archive, p.depot, p.createur, p.creation,
 			(SELECT count(*) FROM taches WHERE projet = p.id)
 		FROM projets p WHERE p.groupe = $1 ORDER BY p.creation`, groupe)
 	if erreur != nil {
@@ -19,7 +19,7 @@ func (d *Depot) ProjetsParGroupe(ctx context.Context, groupe string) ([]modeles.
 	for lignes.Next() {
 		var projet modeles.Projet
 		if erreur := lignes.Scan(&projet.ID, &projet.Groupe, &projet.Nom, &projet.Description,
-			&projet.Couleur, &projet.Archive, &projet.Createur, &projet.Creation, &projet.NbTaches); erreur != nil {
+			&projet.Couleur, &projet.Archive, &projet.Depot, &projet.Createur, &projet.Creation, &projet.NbTaches); erreur != nil {
 			return nil, erreur
 		}
 		projets = append(projets, projet)
@@ -30,10 +30,10 @@ func (d *Depot) ProjetsParGroupe(ctx context.Context, groupe string) ([]modeles.
 func (d *Depot) Projet(ctx context.Context, id string) (*modeles.Projet, error) {
 	var projet modeles.Projet
 	erreur := d.bd.QueryRow(ctx, `
-		SELECT id, groupe, nom, description, couleur, archive, createur, creation
+		SELECT id, groupe, nom, description, couleur, archive, depot, createur, creation
 		FROM projets WHERE id = $1`, id).
 		Scan(&projet.ID, &projet.Groupe, &projet.Nom, &projet.Description,
-			&projet.Couleur, &projet.Archive, &projet.Createur, &projet.Creation)
+			&projet.Couleur, &projet.Archive, &projet.Depot, &projet.Createur, &projet.Creation)
 	if erreur != nil {
 		return nil, erreur
 	}
@@ -49,10 +49,10 @@ func (d *Depot) CreerProjet(ctx context.Context, projet modeles.Projet) (*modele
 	erreur = transaction.QueryRow(ctx, `
 		INSERT INTO projets (groupe, nom, description, couleur, createur)
 		VALUES ($1, $2, $3, $4, $5)
-		RETURNING id, groupe, nom, description, couleur, archive, createur, creation`,
+		RETURNING id, groupe, nom, description, couleur, archive, depot, createur, creation`,
 		projet.Groupe, projet.Nom, projet.Description, projet.Couleur, projet.Createur).
 		Scan(&projet.ID, &projet.Groupe, &projet.Nom, &projet.Description,
-			&projet.Couleur, &projet.Archive, &projet.Createur, &projet.Creation)
+			&projet.Couleur, &projet.Archive, &projet.Depot, &projet.Createur, &projet.Creation)
 	if erreur != nil {
 		return nil, erreur
 	}
@@ -78,10 +78,10 @@ func (d *Depot) CreerProjet(ctx context.Context, projet modeles.Projet) (*modele
 	return &projet, nil
 }
 
-func (d *Depot) ModifierProjet(ctx context.Context, id, nom, description, couleur string, archive bool) error {
+func (d *Depot) ModifierProjet(ctx context.Context, id, nom, description, couleur, depot string, archive bool) error {
 	_, erreur := d.bd.Exec(ctx,
-		`UPDATE projets SET nom = $2, description = $3, couleur = $4, archive = $5 WHERE id = $1`,
-		id, nom, description, couleur, archive)
+		`UPDATE projets SET nom = $2, description = $3, couleur = $4, depot = $5, archive = $6 WHERE id = $1`,
+		id, nom, description, couleur, depot, archive)
 	return erreur
 }
 

@@ -40,6 +40,7 @@ export const schemaProjet = z.object({
   description: z.string(),
   couleur: z.string(),
   archive: z.boolean(),
+  depot: z.string().default(""),
   createur: z.string(),
   creation: z.string(),
   nbtaches: z.number().optional().default(0),
