@@ -67,6 +67,16 @@ watch(
 )
 
 const identifiantTache = computed(() => proprietes.tache?.id ?? "")
+const nomColonne = computed(
+  () => proprietes.colonnes.find((colonne) => colonne.id === proprietes.tache?.colonne)?.nom ?? "",
+)
+const lotCourant = computed(() => proprietes.lots.find((lot) => lot.id === proprietes.tache?.lot))
+const etiquettesCourantes = computed(() =>
+  proprietes.etiquettes.filter((etiquette) => proprietes.tache?.etiquettes.includes(etiquette.id)),
+)
+const membresAffectes = computed(() =>
+  proprietes.membres.filter((membre) => proprietes.tache?.affectations.includes(membre.utilisateur)),
+)
 const { data: profil } = utiliserProfil()
 const { data: commentaires } = utiliserCommentaires(identifiantTache)
 
@@ -208,7 +218,87 @@ function commenter() {
     large
     @fermer="emissions('fermer')"
   >
-    <div class="space-y-4">
+    <div v-if="!edition && tache" class="space-y-5">
+      <div class="flex items-start justify-between gap-3">
+        <h3 class="text-lg font-semibold leading-snug">{{ tache.titre }}</h3>
+        <Badge v-if="tache.points > 0">{{ tache.points }} pt{{ tache.points > 1 ? "s" : "" }}</Badge>
+      </div>
+
+      <div v-if="tache.description" class="texteriche text-sm" v-html="assainir(tache.description)"></div>
+      <p v-else class="text-sm italic text-neutral-500">Aucune description.</p>
+
+      <dl class="grid grid-cols-2 gap-x-4 gap-y-2 rounded-lg bg-neutral-100 p-4 text-sm dark:bg-neutral-800/60">
+        <dt class="text-neutral-500">Colonne</dt>
+        <dd class="font-medium">{{ nomColonne || "—" }}</dd>
+        <dt class="text-neutral-500">Lot</dt>
+        <dd class="font-medium">
+          <template v-if="lotCourant">
+            {{ lotCourant.nom }}
+            <span v-if="lotCourant.echeance" class="text-neutral-500">
+              — {{ formaterDateHeure(lotCourant.echeance) }}
+            </span>
+          </template>
+          <template v-else>—</template>
+        </dd>
+        <dt class="text-neutral-500">Échéance</dt>
+        <dd class="font-medium">{{ tache.echeance ? formaterDateHeure(tache.echeance) : "—" }}</dd>
+        <dt class="text-neutral-500">Créée le</dt>
+        <dd class="font-medium">{{ formaterDateHeure(tache.creation) }}</dd>
+      </dl>
+
+      <div v-if="etiquettesCourantes.length">
+        <span class="text-sm font-medium text-neutral-700 dark:text-neutral-300">Étiquettes</span>
+        <div class="mt-2 flex flex-wrap gap-1.5">
+          <Badge v-for="etiquette in etiquettesCourantes" :key="etiquette.id" :couleur="etiquette.couleur">
+            {{ etiquette.nom }}
+          </Badge>
+        </div>
+      </div>
+
+      <div v-if="membresAffectes.length">
+        <span class="text-sm font-medium text-neutral-700 dark:text-neutral-300">Affectations</span>
+        <div class="mt-2 flex flex-wrap gap-2">
+          <span
+            v-for="membre in membresAffectes"
+            :key="membre.utilisateur"
+            class="flex items-center gap-2 rounded-full border border-neutral-300 px-2 py-1 text-xs text-neutral-700 dark:border-neutral-700 dark:text-neutral-300"
+          >
+            <Avatar :nom="membre.nom" :prenom="membre.prenom" petite />
+            {{ membre.prenom }} {{ membre.nom }}
+          </span>
+        </div>
+      </div>
+
+      <div v-if="tache.images.length">
+        <span class="text-sm font-medium text-neutral-700 dark:text-neutral-300">Images</span>
+        <div class="mt-2 grid grid-cols-3 gap-2">
+          <a v-for="image in tache.images" :key="image.id" :href="image.url" target="_blank" rel="noopener">
+            <img :src="image.url" :alt="image.nom" class="h-24 w-full rounded-lg object-cover" />
+          </a>
+        </div>
+      </div>
+
+      <div class="border-t border-neutral-200 pt-4 dark:border-neutral-800">
+        <span class="text-sm font-medium text-neutral-700 dark:text-neutral-300">Commentaires</span>
+        <ul v-if="commentaires?.length" class="mt-3 space-y-3">
+          <li v-for="commentaire in commentaires" :key="commentaire.id" class="flex gap-3">
+            <Avatar :nom="commentaire.nom" :prenom="commentaire.prenom" petite />
+            <div class="min-w-0 flex-1">
+              <p class="text-xs text-neutral-500">
+                <span class="font-medium text-neutral-700 dark:text-neutral-300">
+                  {{ commentaire.prenom }} {{ commentaire.nom }}
+                </span>
+                · {{ depuis(commentaire.creation) }}
+              </p>
+              <div class="texteriche text-sm" v-html="assainir(commentaire.contenu)"></div>
+            </div>
+          </li>
+        </ul>
+        <p v-else class="mt-2 text-sm text-neutral-500">Aucun commentaire.</p>
+      </div>
+    </div>
+
+    <div v-else class="space-y-4">
       <Champ v-model="formulaire.titre" etiquette="Titre" indication="Que faut-il faire ?" :erreur="erreurs.titre" />
       <ZoneRiche
         v-model="formulaire.description"
