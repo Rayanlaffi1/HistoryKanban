@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/jackc/pgx/v5"
+
 	"historykanban/serveur/internal/modeles"
 )
 
@@ -150,33 +152,38 @@ func (d *Depot) Tache(ctx context.Context, id string) (*modeles.Tache, error) {
 }
 
 func (d *Depot) CreerTache(ctx context.Context, tache modeles.Tache) (*modeles.Tache, error) {
-	erreur := d.bd.QueryRow(ctx, `
-		INSERT INTO taches (projet, colonne, lot, titre, description, points, urgence, echeance, createur, position, terminee)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9,
-			(SELECT coalesce(max(position), -1) + 1 FROM taches WHERE colonne = $2),
-			CASE WHEN EXISTS (
-				SELECT 1 FROM colonnes c
-				WHERE c.id = $2
-					AND c.position = (SELECT max(cc.position) FROM colonnes cc WHERE cc.projet = c.projet)
-			) THEN now() ELSE NULL END)
+	transaction, erreur := d.bd.Begin(ctx)
+	if erreur != nil {
+		return nil, erreur
+	}
+	defer transaction.Rollback(ctx)
+	erreur = transaction.QueryRow(ctx, `
+		INSERT INTO taches (projet, colonne, lot, titre, description, points, urgence, echeance, urls, createur, position, terminee)
+		SELECT $1, c.id, $3, $4, $5, $6, $7, $8, $9, $10,
+			(SELECT coalesce(max(position), -1) + 1 FROM taches WHERE colonne = c.id),
+			CASE WHEN c.position = (SELECT max(cc.position) FROM colonnes cc WHERE cc.projet = c.projet)
+				THEN now() ELSE NULL END
+		FROM colonnes c
+		WHERE c.id = $2 AND c.projet = $1
 		RETURNING id, position, creation, modification`,
 		tache.Projet, tache.Colonne, tache.Lot, tache.Titre, tache.Description,
-		tache.Points, tache.Urgence, tache.Echeance, tache.Createur).
+		tache.Points, tache.Urgence, tache.Echeance, tache.URLs, tache.Createur).
 		Scan(&tache.ID, &tache.Position, &tache.Creation, &tache.Modification)
 	if erreur != nil {
 		return nil, erreur
 	}
 	if len(tache.Affectations) > 0 {
-		if erreur = d.Affecter(ctx, tache.ID, tache.Affectations); erreur != nil {
-			d.SupprimerTache(ctx, tache.ID)
+		if erreur = affecterTx(ctx, transaction, tache.ID, tache.Affectations); erreur != nil {
 			return nil, erreur
 		}
 	}
 	if len(tache.Etiquettes) > 0 {
-		if erreur = d.Etiqueter(ctx, tache.ID, tache.Etiquettes); erreur != nil {
-			d.SupprimerTache(ctx, tache.ID)
+		if erreur = etiqueterTx(ctx, transaction, tache.ID, tache.Etiquettes); erreur != nil {
 			return nil, erreur
 		}
+	}
+	if erreur := transaction.Commit(ctx); erreur != nil {
+		return nil, erreur
 	}
 	return d.Tache(ctx, tache.ID)
 }
@@ -272,12 +279,51 @@ func (d *Depot) DeplacerTache(ctx context.Context, id, colonne string, position 
 		return erreur
 	}
 	defer transaction.Rollback(ctx)
-	if _, erreur = transaction.Exec(ctx,
-		`UPDATE taches SET position = position + 1 WHERE colonne = $1 AND position >= $2`,
-		colonne, position); erreur != nil {
+	var ancienneColonne string
+	var anciennePosition int
+	var projet string
+	if erreur = transaction.QueryRow(ctx,
+		`SELECT projet, colonne, position FROM taches WHERE id = $1 AND suppression IS NULL`, id).
+		Scan(&projet, &ancienneColonne, &anciennePosition); erreur != nil {
 		return erreur
 	}
-	if _, erreur = transaction.Exec(ctx, `
+	var destinationProjet string
+	if erreur = transaction.QueryRow(ctx, `SELECT projet FROM colonnes WHERE id = $1`, colonne).Scan(&destinationProjet); erreur != nil {
+		return erreur
+	}
+	if destinationProjet != projet {
+		return fmt.Errorf("la colonne de destination n'appartient pas au projet de la tache")
+	}
+	if position < 0 {
+		position = 0
+	}
+	if ancienneColonne == colonne {
+		if position > anciennePosition {
+			if _, erreur = transaction.Exec(ctx,
+				`UPDATE taches SET position = position - 1 WHERE colonne = $1 AND suppression IS NULL AND position > $2 AND position <= $3`,
+				colonne, anciennePosition, position); erreur != nil {
+				return erreur
+			}
+		} else if position < anciennePosition {
+			if _, erreur = transaction.Exec(ctx,
+				`UPDATE taches SET position = position + 1 WHERE colonne = $1 AND suppression IS NULL AND position >= $2 AND position < $3`,
+				colonne, position, anciennePosition); erreur != nil {
+				return erreur
+			}
+		}
+	} else {
+		if _, erreur = transaction.Exec(ctx,
+			`UPDATE taches SET position = position - 1 WHERE colonne = $1 AND suppression IS NULL AND position > $2`,
+			ancienneColonne, anciennePosition); erreur != nil {
+			return erreur
+		}
+		if _, erreur = transaction.Exec(ctx,
+			`UPDATE taches SET position = position + 1 WHERE colonne = $1 AND suppression IS NULL AND position >= $2`,
+			colonne, position); erreur != nil {
+			return erreur
+		}
+	}
+	resultat, erreur := transaction.Exec(ctx, `
 		UPDATE taches t SET colonne = $2, position = $3, modification = now(),
 			terminee = CASE
 				WHEN c.position = (SELECT max(cc.position) FROM colonnes cc WHERE cc.projet = c.projet)
@@ -285,9 +331,13 @@ func (d *Depot) DeplacerTache(ctx context.Context, id, colonne string, position 
 				ELSE NULL
 			END
 		FROM colonnes c
-		WHERE t.id = $1 AND c.id = $2`,
-		id, colonne, position); erreur != nil {
+		WHERE t.id = $1 AND c.id = $2 AND c.projet = t.projet`,
+		id, colonne, position)
+	if erreur != nil {
 		return erreur
+	}
+	if resultat.RowsAffected() == 0 {
+		return fmt.Errorf("deplacement impossible")
 	}
 	return transaction.Commit(ctx)
 }
@@ -305,11 +355,11 @@ func distincts(valeurs []string) []string {
 	return resultat
 }
 
-func (d *Depot) Affecter(ctx context.Context, tache string, utilisateurs []string) error {
+func affecterTx(ctx context.Context, transaction pgx.Tx, tache string, utilisateurs []string) error {
 	attendus := distincts(utilisateurs)
 	if len(attendus) > 0 {
 		var valides int
-		erreur := d.bd.QueryRow(ctx, `
+		erreur := transaction.QueryRow(ctx, `
 			SELECT count(DISTINCT m.utilisateur)
 			FROM taches t
 			JOIN projets p ON p.id = t.projet
@@ -322,29 +372,36 @@ func (d *Depot) Affecter(ctx context.Context, tache string, utilisateurs []strin
 			return fmt.Errorf("un utilisateur affecte n'appartient pas au groupe du projet")
 		}
 	}
-	transaction, erreur := d.bd.Begin(ctx)
-	if erreur != nil {
+	if _, erreur := transaction.Exec(ctx, `DELETE FROM affectations WHERE tache = $1`, tache); erreur != nil {
 		return erreur
 	}
-	defer transaction.Rollback(ctx)
-	if _, erreur = transaction.Exec(ctx, `DELETE FROM affectations WHERE tache = $1`, tache); erreur != nil {
-		return erreur
-	}
-	for _, utilisateur := range utilisateurs {
-		if _, erreur = transaction.Exec(ctx,
+	for _, utilisateur := range attendus {
+		if _, erreur := transaction.Exec(ctx,
 			`INSERT INTO affectations (tache, utilisateur) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
 			tache, utilisateur); erreur != nil {
 			return erreur
 		}
 	}
+	return nil
+}
+
+func (d *Depot) Affecter(ctx context.Context, tache string, utilisateurs []string) error {
+	transaction, erreur := d.bd.Begin(ctx)
+	if erreur != nil {
+		return erreur
+	}
+	defer transaction.Rollback(ctx)
+	if erreur := affecterTx(ctx, transaction, tache, utilisateurs); erreur != nil {
+		return erreur
+	}
 	return transaction.Commit(ctx)
 }
 
-func (d *Depot) Etiqueter(ctx context.Context, tache string, etiquettes []string) error {
+func etiqueterTx(ctx context.Context, transaction pgx.Tx, tache string, etiquettes []string) error {
 	attendues := distincts(etiquettes)
 	if len(attendues) > 0 {
 		var valides int
-		erreur := d.bd.QueryRow(ctx, `
+		erreur := transaction.QueryRow(ctx, `
 			SELECT count(DISTINCT e.id)
 			FROM taches t
 			JOIN etiquettes e ON e.projet = t.projet
@@ -356,20 +413,27 @@ func (d *Depot) Etiqueter(ctx context.Context, tache string, etiquettes []string
 			return fmt.Errorf("une etiquette n'appartient pas a ce projet")
 		}
 	}
+	if _, erreur := transaction.Exec(ctx, `DELETE FROM etiquetages WHERE tache = $1`, tache); erreur != nil {
+		return erreur
+	}
+	for _, etiquette := range attendues {
+		if _, erreur := transaction.Exec(ctx,
+			`INSERT INTO etiquetages (tache, etiquette) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+			tache, etiquette); erreur != nil {
+			return erreur
+		}
+	}
+	return nil
+}
+
+func (d *Depot) Etiqueter(ctx context.Context, tache string, etiquettes []string) error {
 	transaction, erreur := d.bd.Begin(ctx)
 	if erreur != nil {
 		return erreur
 	}
 	defer transaction.Rollback(ctx)
-	if _, erreur = transaction.Exec(ctx, `DELETE FROM etiquetages WHERE tache = $1`, tache); erreur != nil {
+	if erreur := etiqueterTx(ctx, transaction, tache, etiquettes); erreur != nil {
 		return erreur
-	}
-	for _, etiquette := range etiquettes {
-		if _, erreur = transaction.Exec(ctx,
-			`INSERT INTO etiquetages (tache, etiquette) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
-			tache, etiquette); erreur != nil {
-			return erreur
-		}
 	}
 	return transaction.Commit(ctx)
 }

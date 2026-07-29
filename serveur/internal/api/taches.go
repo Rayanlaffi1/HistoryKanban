@@ -1,6 +1,8 @@
 package api
 
 import (
+	"bytes"
+	"io"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -12,6 +14,18 @@ import (
 
 	"historykanban/serveur/internal/modeles"
 )
+
+func requeteUUIDValide(c *gin.Context, cle string) (string, bool) {
+	valeur := c.Query(cle)
+	if valeur == "" {
+		return "", true
+	}
+	if _, erreur := uuid.Parse(valeur); erreur != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"erreur": cle + " invalide"})
+		return "", false
+	}
+	return valeur, true
+}
 
 func entierRequete(c *gin.Context, cle string) *int {
 	valeur := c.Query(cle)
@@ -30,11 +44,23 @@ func (s *Serveur) listerTaches(c *gin.Context) {
 	if !autorise {
 		return
 	}
+	membre, ok := requeteUUIDValide(c, "membre")
+	if !ok {
+		return
+	}
+	etiquette, ok := requeteUUIDValide(c, "etiquette")
+	if !ok {
+		return
+	}
+	lot, ok := requeteUUIDValide(c, "lot")
+	if !ok {
+		return
+	}
 	filtre := modeles.Filtre{
 		Texte:     c.Query("texte"),
-		Membre:    c.Query("membre"),
-		Etiquette: c.Query("etiquette"),
-		Lot:       c.Query("lot"),
+		Membre:    membre,
+		Etiquette: etiquette,
+		Lot:       lot,
 		Echeance:  c.Query("echeance"),
 		Urgence:   c.Query("urgence"),
 		PointsMin: entierRequete(c, "pointsmin"),
@@ -57,6 +83,18 @@ type corpsTache struct {
 	Urgence      string     `json:"urgence"`
 	Echeance     *time.Time `json:"echeance"`
 	URLs         []string   `json:"urls"`
+	Affectations []string   `json:"affectations"`
+	Etiquettes   []string   `json:"etiquettes"`
+}
+
+type corpsModificationTache struct {
+	Titre        *string    `json:"titre"`
+	Description  *string    `json:"description"`
+	Lot          *string    `json:"lot"`
+	Points       *int       `json:"points"`
+	Urgence      *string    `json:"urgence"`
+	Echeance     *time.Time `json:"echeance"`
+	URLs         *[]string  `json:"urls"`
 	Affectations []string   `json:"affectations"`
 	Etiquettes   []string   `json:"etiquettes"`
 }
@@ -108,8 +146,13 @@ func (s *Serveur) creerTache(c *gin.Context) {
 		return
 	}
 	var corps corpsTache
-	if erreur := c.ShouldBindJSON(&corps); erreur != nil || corps.Colonne == "" {
+	if erreur := c.ShouldBindJSON(&corps); erreur != nil || strings.TrimSpace(corps.Titre) == "" || corps.Colonne == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"erreur": "titre et colonne requis"})
+		return
+	}
+	urls, message := nettoyerURLs(corps.URLs)
+	if message != "" {
+		c.JSON(http.StatusBadRequest, gin.H{"erreur": message})
 		return
 	}
 	urgence, valide := urgenceValide(corps.Urgence)
@@ -126,12 +169,13 @@ func (s *Serveur) creerTache(c *gin.Context) {
 		Points:       corps.Points,
 		Urgence:      urgence,
 		Echeance:     corps.Echeance,
+		URLs:         urls,
 		Createur:     s.revendications(c).Utilisateur,
 		Affectations: corps.Affectations,
 		Etiquettes:   corps.Etiquettes,
 	})
 	if erreur != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"erreur": "creation de la tache impossible : " + erreur.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"erreur": "creation de la tache impossible"})
 		return
 	}
 	s.remplirURLsTache(tache)
@@ -157,15 +201,27 @@ func (s *Serveur) modifierTache(c *gin.Context) {
 	if !autorise {
 		return
 	}
-	var corps corpsTache
+	donnees, erreurLecture := io.ReadAll(c.Request.Body)
+	if erreurLecture != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"erreur": "corps invalide"})
+		return
+	}
+	c.Request.Body = io.NopCloser(bytes.NewReader(donnees))
+	var presents map[string]any
+	if erreur := c.ShouldBindJSON(&presents); erreur != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"erreur": "corps invalide"})
+		return
+	}
+	c.Request.Body = io.NopCloser(bytes.NewReader(donnees))
+	var corps corpsModificationTache
 	if erreur := c.ShouldBindJSON(&corps); erreur != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"erreur": "titre requis"})
+		c.JSON(http.StatusBadRequest, gin.H{"erreur": "corps invalide"})
 		return
 	}
 	contexte := c.Request.Context()
 	urls := tache.URLs
 	if corps.URLs != nil {
-		nettoyees, message := nettoyerURLs(corps.URLs)
+		nettoyees, message := nettoyerURLs(*corps.URLs)
 		if message != "" {
 			c.JSON(http.StatusBadRequest, gin.H{"erreur": message})
 			return
@@ -175,36 +231,60 @@ func (s *Serveur) modifierTache(c *gin.Context) {
 	if urls == nil {
 		urls = []string{}
 	}
+	titre := tache.Titre
+	if corps.Titre != nil {
+		titre = strings.TrimSpace(*corps.Titre)
+		if titre == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"erreur": "titre requis"})
+			return
+		}
+	}
+	description := tache.Description
+	if corps.Description != nil {
+		description = *corps.Description
+	}
+	points := tache.Points
+	if corps.Points != nil {
+		points = *corps.Points
+	}
+	echeance := tache.Echeance
+	if _, present := presents["echeance"]; present {
+		echeance = corps.Echeance
+	}
+	lot := tache.Lot
+	if _, present := presents["lot"]; present {
+		lot = corps.Lot
+	}
 	urgence := tache.Urgence
-	if corps.Urgence != "" {
-		if !urgencesAutorisees[corps.Urgence] {
+	if corps.Urgence != nil {
+		if !urgencesAutorisees[*corps.Urgence] {
 			c.JSON(http.StatusBadRequest, gin.H{"erreur": "urgence invalide : faible, normale, elevee ou urgente"})
 			return
 		}
-		urgence = corps.Urgence
+		urgence = *corps.Urgence
 	}
 	if erreur := s.Depot.ModifierTache(contexte, modeles.Tache{
 		ID:          tache.ID,
-		Titre:       corps.Titre,
-		Description: corps.Description,
-		Points:      corps.Points,
+		Titre:       titre,
+		Description: description,
+		Points:      points,
 		Urgence:     urgence,
-		Echeance:    corps.Echeance,
-		Lot:         corps.Lot,
+		Echeance:    echeance,
+		Lot:         lot,
 		URLs:        urls,
 	}); erreur != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"erreur": "modification de la tache impossible"})
 		return
 	}
-	if corps.Affectations != nil {
+	if _, present := presents["affectations"]; present {
 		if erreur := s.Depot.Affecter(contexte, tache.ID, corps.Affectations); erreur != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"erreur": "affectation impossible : " + erreur.Error()})
+			c.JSON(http.StatusBadRequest, gin.H{"erreur": "affectation impossible"})
 			return
 		}
 	}
-	if corps.Etiquettes != nil {
+	if _, present := presents["etiquettes"]; present {
 		if erreur := s.Depot.Etiqueter(contexte, tache.ID, corps.Etiquettes); erreur != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"erreur": "etiquetage impossible : " + erreur.Error()})
+			c.JSON(http.StatusBadRequest, gin.H{"erreur": "etiquetage impossible"})
 			return
 		}
 	}
@@ -306,7 +386,10 @@ func (s *Serveur) purgerTache(c *gin.Context) {
 		return
 	}
 	for _, image := range tache.Images {
-		s.Stockage.Supprimer(c.Request.Context(), image.Chemin)
+		if erreur := s.Stockage.Supprimer(c.Request.Context(), image.Chemin); erreur != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"erreur": "suppression du fichier impossible"})
+			return
+		}
 	}
 	if erreur := s.Depot.PurgerTache(c.Request.Context(), tache.ID); erreur != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"erreur": "suppression definitive impossible"})
@@ -377,7 +460,7 @@ func (s *Serveur) supprimerCommentaire(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"etat": "supprime"})
 }
 
-var extensionsAutorisees = map[string]bool{
+var typesMIMEAutorises = map[string]bool{
 	"image/png":                   true,
 	"image/jpeg":                  true,
 	"image/gif":                   true,
@@ -414,19 +497,35 @@ func (s *Serveur) televerserImage(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"erreur": "fichier trop volumineux"})
 		return
 	}
-	typeContenu := fichier.Header.Get("Content-Type")
-	if !extensionsAutorisees[typeContenu] {
-		c.JSON(http.StatusBadRequest, gin.H{"erreur": "format de fichier non pris en charge"})
-		return
-	}
 	contenu, erreur := fichier.Open()
 	if erreur != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"erreur": "lecture du fichier impossible"})
 		return
 	}
 	defer contenu.Close()
+	entete := make([]byte, 512)
+	lus, erreur := contenu.Read(entete)
+	if erreur != nil && erreur != io.EOF {
+		c.JSON(http.StatusInternalServerError, gin.H{"erreur": "lecture du fichier impossible"})
+		return
+	}
+	typeContenu := http.DetectContentType(entete[:lus])
+	if typeContenu == "application/octet-stream" {
+		typeDeclare := fichier.Header.Get("Content-Type")
+		if typesMIMEAutorises[typeDeclare] {
+			typeContenu = typeDeclare
+		}
+	}
+	if !typesMIMEAutorises[typeContenu] {
+		c.JSON(http.StatusBadRequest, gin.H{"erreur": "format de fichier non pris en charge"})
+		return
+	}
+	contenuRejoue := struct {
+		io.Reader
+		io.Closer
+	}{Reader: io.MultiReader(bytes.NewReader(entete[:lus]), contenu), Closer: contenu}
 	chemin := tache.ID + "/" + uuid.NewString()
-	if erreur := s.Stockage.Televerser(c.Request.Context(), chemin, contenu, fichier.Size, typeContenu); erreur != nil {
+	if erreur := s.Stockage.Televerser(c.Request.Context(), chemin, contenuRejoue, fichier.Size, typeContenu); erreur != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"erreur": "televersement impossible"})
 		return
 	}
@@ -461,7 +560,10 @@ func (s *Serveur) supprimerImage(c *gin.Context) {
 	if !autorise {
 		return
 	}
-	s.Stockage.Supprimer(c.Request.Context(), image.Chemin)
+	if erreur := s.Stockage.Supprimer(c.Request.Context(), image.Chemin); erreur != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"erreur": "suppression du fichier impossible"})
+		return
+	}
 	if erreur := s.Depot.SupprimerImage(c.Request.Context(), image.ID); erreur != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"erreur": "suppression de l'image impossible"})
 		return

@@ -243,7 +243,7 @@ func (s *Serveur) televerserFichier(c *gin.Context) {
 		return
 	}
 	typeContenu := fichier.Header.Get("Content-Type")
-	if !extensionsAutorisees[typeContenu] {
+	if !typesMIMEAutorises[typeContenu] {
 		c.JSON(http.StatusBadRequest, gin.H{"erreur": "format d'image non pris en charge"})
 		return
 	}
