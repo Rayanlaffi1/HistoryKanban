@@ -40,7 +40,7 @@ export function demarrerTempsReel(clientRequetes: QueryClient) {
 
   function connecter() {
     const base = urlWS
-    prise = new WebSocket(`${base}/ws?jeton=${jeton()}`)
+    prise = new WebSocket(`${base}/ws`, ["historykanban", `bearer.${jeton()}`])
     prise.onopen = () => {
       for (const projet of abonnements) {
         prise?.send(JSON.stringify({ action: "abonner", projet }))

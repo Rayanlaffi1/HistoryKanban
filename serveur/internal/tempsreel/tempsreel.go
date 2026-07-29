@@ -2,6 +2,7 @@ package tempsreel
 
 import (
 	"encoding/json"
+	"log"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -106,6 +107,8 @@ func (connexion *Connexion) transmettre(message []byte) {
 	select {
 	case connexion.envoi <- message:
 	default:
+		log.Printf("client temps reel lent, fermeture de la connexion utilisateur=%s session=%s", connexion.Utilisateur, connexion.Session)
+		connexion.prise.Close()
 	}
 }
 

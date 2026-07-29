@@ -12,7 +12,7 @@ $dossierCertificats = Join-Path $racine 'traefik\certificats'
 $fichierCle = Join-Path $dossierCertificats 'historykanban.key'
 $fichierCertificat = Join-Path $dossierCertificats 'historykanban.crt'
 
-$fichiersExistants = @($fichierEnv, $fichierCle, $fichierCertificat) | Where-Object {
+[array]$fichiersExistants = @($fichierEnv, $fichierCle, $fichierCertificat) | Where-Object {
     Test-Path -LiteralPath $_
 }
 if ($fichiersExistants.Count -gt 0 -and -not $Force) {
