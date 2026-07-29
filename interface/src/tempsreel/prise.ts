@@ -10,6 +10,8 @@ import { typesNotifications } from "@/api/types"
 let prise: WebSocket | null = null
 let actif = false
 const abonnements = new Set<string>()
+const projetsStatistiquesEnAttente = new Set<string>()
+let minuterieStatistiques: ReturnType<typeof setTimeout> | null = null
 
 export const notifierDeplacement = useLocalStorage("historykanban.notifdeplacement", true)
 export const connectes = ref<string[]>([])
@@ -31,6 +33,26 @@ interface MessageServeur {
   utilisateur?: string
   etat?: string
   donnees?: any
+}
+
+// Invalidation différée et ciblée des statistiques : une rafale d'événements de
+// tâches ne déclenche qu'un seul recalcul, et seules les vues concernées (tous
+// projets ou le projet touché) sont rafraîchies.
+function planifierInvalidationStatistiques(clientRequetes: QueryClient, projet: string) {
+  projetsStatistiquesEnAttente.add(projet)
+  if (minuterieStatistiques) return
+  minuterieStatistiques = setTimeout(() => {
+    const projets = new Set(projetsStatistiquesEnAttente)
+    projetsStatistiquesEnAttente.clear()
+    minuterieStatistiques = null
+    clientRequetes.invalidateQueries({
+      predicate: (requete) => {
+        if (requete.queryKey[0] !== "statistiques") return false
+        const parametres = requete.queryKey[2] as { projet?: string } | undefined
+        return !parametres?.projet || projets.has(parametres.projet)
+      },
+    })
+  }, 2000)
 }
 
 export function demarrerTempsReel(clientRequetes: QueryClient) {
@@ -87,7 +109,7 @@ export function demarrerTempsReel(clientRequetes: QueryClient) {
           if (cibleActivite) {
             clientRequetes.invalidateQueries({ queryKey: ["activites", cibleActivite] })
           }
-          clientRequetes.invalidateQueries({ queryKey: ["statistiques"] })
+          planifierInvalidationStatistiques(clientRequetes, message.projet)
         }
         if (message.type === "tache.deplacee" && notifierDeplacement.value) {
           magasin.annoncer(
