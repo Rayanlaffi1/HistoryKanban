@@ -64,7 +64,7 @@ L'application est aussi accessible depuis une autre machine du reseau grace aux 
 
 Le certificat reste auto-signe : accepter l'exception de securite pour l'interface puis pour Keycloak (ouvrir une fois `https://auth.historykanban.<IP>.sslip.io` dans un onglet). Le routage Traefik accepte n'importe quelle IP dans le domaine, mais la connexion Keycloak et la validation des jetons ne fonctionnent que pour l'adresse declaree dans `IPRESEAU`.
 
-Le realm Keycloak n'est importe qu'au premier demarrage : si la pile a deja tourne avant le changement d'`IPRESEAU`, ajouter `https://historykanban.<IP>.sslip.io/*` aux « Valid redirect URIs » du client `interface` dans la console d'administration Keycloak (ou reinitialiser les volumes avec `docker compose down -v`, ce qui supprime toutes les donnees).
+Au demarrage, Keycloak synchronise automatiquement les « Valid redirect URIs » du client `interface` avec le domaine declare par `IPRESEAU`, meme si le realm existe deja. Apres un changement d'adresse IP, il suffit donc de mettre a jour `.env`, puis de redemarrer la pile avec `docker compose up -d --build`.
 
 Le fonctionnement via `https://historykanban.localhost` reste inchange : les deux acces cohabitent, l'interface derive ses URL publiques de l'adresse consultee.
 
