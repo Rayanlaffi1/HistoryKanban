@@ -205,6 +205,25 @@ export const schemaStatistiques = z.object({
       taches: z.number(),
     }),
   ),
+  terminees: z.array(
+    z.object({
+      periode: z.string(),
+      points: z.number(),
+      total: z.number(),
+      taches: z.array(
+        z.object({
+          id: z.string(),
+          projet: z.string(),
+          projetnom: z.string(),
+          projetcouleur: z.string(),
+          titre: z.string(),
+          points: z.number(),
+          urgence: z.string(),
+          terminee: z.string(),
+        }),
+      ),
+    }),
+  ),
   totaux: z.object({
     points: z.number(),
     terminees: z.number(),

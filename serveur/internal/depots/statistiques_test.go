@@ -98,6 +98,55 @@ func TestStatistiquesUtilisentLaDateDeFinEtPasLaDerniereModification(t *testing.
 	}
 }
 
+func TestStatistiquesListentLesTachesTermineesParPeriodeTousProjets(t *testing.T) {
+	depot, ctx, fermer := depotTest(t)
+	defer fermer()
+	_, premierProjet, _, premiereFin, utilisateur := preparerProjetStatistiques(t, depot, ctx)
+
+	secondProjet := "00000000-0000-4000-8000-000000000006"
+	secondeFin := "00000000-0000-4000-8000-000000000007"
+	_, err := depot.bd.Exec(ctx, `
+		INSERT INTO projets (id, groupe, nom, couleur, createur) VALUES ($1, $2, 'Second projet stats', '#2563eb', $3)
+		ON CONFLICT (id) DO NOTHING`, secondProjet, "00000000-0000-4000-8000-000000000002", utilisateur)
+	if err != nil {
+		t.Fatalf("creation second projet: %v", err)
+	}
+	_, err = depot.bd.Exec(ctx, `
+		INSERT INTO colonnes (id, projet, nom, position) VALUES ($1, $2, 'Termine', 0)
+		ON CONFLICT (id) DO NOTHING`, secondeFin, secondProjet)
+	if err != nil {
+		t.Fatalf("creation colonne second projet: %v", err)
+	}
+
+	periode := time.Now().AddDate(0, 0, -2).Truncate(time.Second)
+	_, err = depot.bd.Exec(ctx, `
+		INSERT INTO taches (projet, colonne, titre, points, urgence, createur, terminee)
+		VALUES
+		($1, $2, 'Tache premier projet', 5, 'normale', $5, $6),
+		($3, $4, 'Tache second projet', 3, 'urgente', $5, $6)`, premierProjet, premiereFin, secondProjet, secondeFin, utilisateur, periode)
+	if err != nil {
+		t.Fatalf("creation taches terminees: %v", err)
+	}
+
+	stats, err := depot.Statistiques(ctx, []string{premierProjet, secondProjet}, periode.Add(-24*time.Hour), periode.Add(24*time.Hour), "day")
+	if err != nil {
+		t.Fatalf("statistiques: %v", err)
+	}
+	if len(stats.Terminees) != 1 {
+		t.Fatalf("periodes terminees = %d, attendu 1", len(stats.Terminees))
+	}
+	periodeTerminee := stats.Terminees[0]
+	if periodeTerminee.Points != 8 || periodeTerminee.Total != 2 || len(periodeTerminee.Taches) != 2 {
+		t.Fatalf("periode terminee = %+v, attendu 8 points et 2 taches", periodeTerminee)
+	}
+	if periodeTerminee.Taches[0].Titre != "Tache premier projet" || periodeTerminee.Taches[0].ProjetNom == "" {
+		t.Fatalf("premiere tache terminee invalide: %+v", periodeTerminee.Taches[0])
+	}
+	if periodeTerminee.Taches[1].Titre != "Tache second projet" || periodeTerminee.Taches[1].Projet != secondProjet {
+		t.Fatalf("seconde tache terminee invalide: %+v", periodeTerminee.Taches[1])
+	}
+}
+
 func TestDeplacerTacheRenseigneLaDateDeFinSeulementEnDerniereColonne(t *testing.T) {
 	depot, ctx, fermer := depotTest(t)
 	defer fermer()

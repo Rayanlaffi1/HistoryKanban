@@ -72,6 +72,10 @@ function libellePeriode(valeur: string): string {
   return moment.format("DD MMM")
 }
 
+function libelleDateTerminee(valeur: string): string {
+  return dayjs(valeur).format("DD/MM/YYYY HH:mm")
+}
+
 const tuiles = computed(() => [
   { libelle: "Points réalisés", valeur: statistiques.value?.totaux.points ?? 0 },
   { libelle: "Tâches terminées", valeur: statistiques.value?.totaux.terminees ?? 0 },
@@ -169,6 +173,69 @@ const classeChampDate =
         </div>
       </div>
       <p v-else class="rounded-lg border border-dashed border-neutral-300 p-8 text-center text-sm text-neutral-500 dark:border-neutral-700">
+        Aucune tâche terminée sur la période.
+      </p>
+    </section>
+
+    <section class="rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900">
+      <div class="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h3 class="font-semibold">Tâches terminées</h3>
+          <p class="mt-0.5 text-xs text-neutral-500">
+            Toutes les tâches faites sur le périmètre sélectionné, regroupées selon la granularité.
+          </p>
+        </div>
+        <span class="rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
+          {{ statistiques?.totaux.terminees ?? 0 }} tâche{{ (statistiques?.totaux.terminees ?? 0) > 1 ? "s" : "" }}
+        </span>
+      </div>
+      <p v-if="chargement" class="py-10 text-center text-sm text-neutral-500">Chargement…</p>
+      <div v-else-if="statistiques?.terminees.length" class="mt-4 space-y-3">
+        <details
+          v-for="periodeTerminee in statistiques.terminees"
+          :key="periodeTerminee.periode"
+          class="group rounded-lg border border-neutral-200 bg-neutral-50 p-3 open:bg-white dark:border-neutral-700 dark:bg-neutral-800/50 dark:open:bg-neutral-900"
+          open
+        >
+          <summary class="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold">
+            <span>{{ libellePeriode(periodeTerminee.periode) }}</span>
+            <span class="text-xs font-medium text-neutral-500">
+              {{ periodeTerminee.total }} tâche{{ periodeTerminee.total > 1 ? "s" : "" }} · {{ periodeTerminee.points }} pts
+            </span>
+          </summary>
+          <ul class="mt-3 space-y-2">
+            <li
+              v-for="tache in periodeTerminee.taches"
+              :key="tache.id"
+              class="rounded-lg border border-neutral-200 bg-white p-3 dark:border-neutral-700 dark:bg-neutral-900"
+            >
+              <RouterLink :to="{ name: 'projet', params: { id: tache.projet } }" class="block hover:text-neutral-700 dark:hover:text-neutral-200">
+                <div class="flex flex-wrap items-start justify-between gap-2">
+                  <div class="min-w-0">
+                    <p class="truncate text-sm font-medium">{{ tache.titre }}</p>
+                    <p class="mt-1 flex flex-wrap items-center gap-2 text-xs text-neutral-500">
+                      <span class="inline-flex items-center gap-1">
+                        <span class="h-2 w-2 rounded-full" :style="{ backgroundColor: tache.projetcouleur }"></span>
+                        {{ tache.projetnom }}
+                      </span>
+                      <span>Terminée le {{ libelleDateTerminee(tache.terminee) }}</span>
+                    </p>
+                  </div>
+                  <div class="flex shrink-0 items-center gap-2 text-xs">
+                    <span class="rounded-full bg-neutral-100 px-2 py-1 font-semibold text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
+                      {{ tache.points }} pts
+                    </span>
+                    <span class="rounded-full border border-neutral-200 px-2 py-1 text-neutral-500 dark:border-neutral-700">
+                      {{ tache.urgence }}
+                    </span>
+                  </div>
+                </div>
+              </RouterLink>
+            </li>
+          </ul>
+        </details>
+      </div>
+      <p v-else class="mt-4 rounded-lg border border-dashed border-neutral-300 p-8 text-center text-sm text-neutral-500 dark:border-neutral-700">
         Aucune tâche terminée sur la période.
       </p>
     </section>

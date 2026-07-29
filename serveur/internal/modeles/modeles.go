@@ -175,6 +175,24 @@ type PointSerie struct {
 	Taches  int       `json:"taches"`
 }
 
+type TacheTermineeStatistiques struct {
+	ID            string    `json:"id"`
+	Projet        string    `json:"projet"`
+	ProjetNom     string    `json:"projetnom"`
+	ProjetCouleur string    `json:"projetcouleur"`
+	Titre         string    `json:"titre"`
+	Points        int       `json:"points"`
+	Urgence       string    `json:"urgence"`
+	Terminee      time.Time `json:"terminee"`
+}
+
+type PeriodeTermineesStatistiques struct {
+	Periode time.Time                   `json:"periode"`
+	Points  int                         `json:"points"`
+	Total   int                         `json:"total"`
+	Taches  []TacheTermineeStatistiques `json:"taches"`
+}
+
 type TotauxStatistiques struct {
 	Points      int `json:"points"`
 	Terminees   int `json:"terminees"`
@@ -184,9 +202,10 @@ type TotauxStatistiques struct {
 }
 
 type Statistiques struct {
-	Classement []LigneClassement  `json:"classement"`
-	Serie      []PointSerie       `json:"serie"`
-	Totaux     TotauxStatistiques `json:"totaux"`
+	Classement []LigneClassement              `json:"classement"`
+	Serie      []PointSerie                   `json:"serie"`
+	Terminees  []PeriodeTermineesStatistiques `json:"terminees"`
+	Totaux     TotauxStatistiques             `json:"totaux"`
 }
 
 type Resultat struct {

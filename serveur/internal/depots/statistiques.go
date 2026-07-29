@@ -39,6 +39,7 @@ func (d *Depot) Statistiques(ctx context.Context, projets []string, debut, fin t
 	statistiques := &modeles.Statistiques{
 		Classement: []modeles.LigneClassement{},
 		Serie:      []modeles.PointSerie{},
+		Terminees:  []modeles.PeriodeTermineesStatistiques{},
 	}
 	if len(projets) == 0 {
 		return statistiques, nil
@@ -164,6 +165,45 @@ func (d *Depot) Statistiques(ctx context.Context, projets []string, debut, fin t
 		statistiques.Serie = append(statistiques.Serie, point)
 		statistiques.Totaux.Points += point.Points
 		statistiques.Totaux.Terminees += point.Taches
+	}
+	lignes.Close()
+	if erreur := lignes.Err(); erreur != nil {
+		return nil, erreur
+	}
+
+	lignes, erreur = d.bd.Query(ctx, cteTerminees+`
+		SELECT date_trunc($4, te.terminee) AS periode,
+			te.id, p.id, p.nom, p.couleur, t.titre, te.points, t.urgence, te.terminee
+		FROM terminees te
+		JOIN taches t ON t.id = te.id
+		JOIN projets p ON p.id = t.projet
+		ORDER BY periode DESC, p.nom, te.terminee DESC, t.titre`,
+		projets, debut, fin, granularite)
+	if erreur != nil {
+		return nil, erreur
+	}
+	parPeriode := map[time.Time]int{}
+	for lignes.Next() {
+		var periode time.Time
+		var tache modeles.TacheTermineeStatistiques
+		if erreur := lignes.Scan(&periode, &tache.ID, &tache.Projet, &tache.ProjetNom, &tache.ProjetCouleur,
+			&tache.Titre, &tache.Points, &tache.Urgence, &tache.Terminee); erreur != nil {
+			lignes.Close()
+			return nil, erreur
+		}
+		indice, present := parPeriode[periode]
+		if !present {
+			statistiques.Terminees = append(statistiques.Terminees, modeles.PeriodeTermineesStatistiques{
+				Periode: periode,
+				Taches:  []modeles.TacheTermineeStatistiques{},
+			})
+			indice = len(statistiques.Terminees) - 1
+			parPeriode[periode] = indice
+		}
+		periodeTerminee := &statistiques.Terminees[indice]
+		periodeTerminee.Taches = append(periodeTerminee.Taches, tache)
+		periodeTerminee.Total++
+		periodeTerminee.Points += tache.Points
 	}
 	lignes.Close()
 	if erreur := lignes.Err(); erreur != nil {
