@@ -89,7 +89,7 @@ func TestStatistiquesUtilisentLaDateDeFinEtPasLaDerniereModification(t *testing.
 		t.Fatalf("creation tache terminee: %v", err)
 	}
 
-	stats, err := depot.Statistiques(ctx, []string{projet}, terminee.Add(-24*time.Hour), terminee.Add(24*time.Hour), "day")
+	stats, err := depot.Statistiques(ctx, []string{projet}, terminee.Add(-24*time.Hour), terminee.Add(24*time.Hour), "day", 100, 0)
 	if err != nil {
 		t.Fatalf("statistiques: %v", err)
 	}
@@ -128,7 +128,7 @@ func TestStatistiquesListentLesTachesTermineesParPeriodeTousProjets(t *testing.T
 		t.Fatalf("creation taches terminees: %v", err)
 	}
 
-	stats, err := depot.Statistiques(ctx, []string{premierProjet, secondProjet}, periode.Add(-24*time.Hour), periode.Add(24*time.Hour), "day")
+	stats, err := depot.Statistiques(ctx, []string{premierProjet, secondProjet}, periode.Add(-24*time.Hour), periode.Add(24*time.Hour), "day", 100, 0)
 	if err != nil {
 		t.Fatalf("statistiques: %v", err)
 	}
