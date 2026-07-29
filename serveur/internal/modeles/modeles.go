@@ -48,12 +48,13 @@ type Projet struct {
 }
 
 type Colonne struct {
-	ID       string `json:"id"`
-	Projet   string `json:"projet"`
-	Nom      string `json:"nom"`
-	Couleur  string `json:"couleur"`
-	Position int    `json:"position"`
-	Limite   *int   `json:"limite"`
+	ID        string `json:"id"`
+	Projet    string `json:"projet"`
+	Nom       string `json:"nom"`
+	Couleur   string `json:"couleur"`
+	Position  int    `json:"position"`
+	Limite    *int   `json:"limite"`
+	Terminale bool   `json:"terminale"`
 }
 
 type Lot struct {

@@ -15,7 +15,7 @@ const cteTerminees = `
 		JOIN colonnes c ON c.id = t.colonne
 		WHERE t.projet = ANY($1) AND t.suppression IS NULL
 			AND t.terminee BETWEEN $2 AND $3
-			AND c.position = (SELECT max(cc.position) FROM colonnes cc WHERE cc.projet = t.projet)
+			AND c.terminale
 	)`
 
 // Les agregats temporels sont regroupes sur la journee civile locale via le littéral
@@ -241,8 +241,7 @@ func (d *Depot) Statistiques(ctx context.Context, projets []string, debut, fin t
 	erreur = d.bd.QueryRow(ctx, `
 		SELECT count(*),
 			coalesce(sum(t.points), 0),
-			count(*) FILTER (WHERE t.echeance < now()
-				AND c.position <> (SELECT max(cc.position) FROM colonnes cc WHERE cc.projet = t.projet))
+			count(*) FILTER (WHERE t.echeance < now() AND NOT c.terminale)
 		FROM taches t
 		JOIN colonnes c ON c.id = t.colonne
 		WHERE t.projet = ANY($1) AND t.suppression IS NULL`, projets).

@@ -49,7 +49,8 @@ CREATE TABLE IF NOT EXISTS colonnes (
     nom TEXT NOT NULL,
     couleur TEXT NOT NULL DEFAULT '#a3a3a3',
     position INTEGER NOT NULL DEFAULT 0,
-    limite INTEGER
+    limite INTEGER,
+    terminale BOOLEAN NOT NULL DEFAULT false
 );
 
 CREATE TABLE IF NOT EXISTS lots (
@@ -155,12 +156,20 @@ ALTER TABLE taches ADD COLUMN IF NOT EXISTS suppression TIMESTAMPTZ;
 ALTER TABLE taches ADD COLUMN IF NOT EXISTS terminee TIMESTAMPTZ;
 ALTER TABLE activites ADD COLUMN IF NOT EXISTS agent BOOLEAN NOT NULL DEFAULT false;
 ALTER TABLE commentaires ADD COLUMN IF NOT EXISTS agent BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE colonnes ADD COLUMN IF NOT EXISTS terminale BOOLEAN NOT NULL DEFAULT false;
+
+-- Chaque projet sans colonne terminale explicite considere sa derniere colonne
+-- (position maximale) comme terminale. Une fois une colonne marquee pour un projet,
+-- ce backfill ne la reecrit plus : un choix explicite est ainsi preserve.
+UPDATE colonnes c SET terminale = true
+WHERE c.position = (SELECT max(cc.position) FROM colonnes cc WHERE cc.projet = c.projet)
+  AND NOT EXISTS (SELECT 1 FROM colonnes d WHERE d.projet = c.projet AND d.terminale);
 
 UPDATE taches t SET terminee = t.modification
 FROM colonnes c
 WHERE c.id = t.colonne
   AND t.terminee IS NULL
-  AND c.position = (SELECT max(cc.position) FROM colonnes cc WHERE cc.projet = t.projet);
+  AND c.terminale;
 
 CREATE INDEX IF NOT EXISTS taches_suppression ON taches(suppression);
 CREATE INDEX IF NOT EXISTS taches_terminee ON taches(terminee);
