@@ -58,6 +58,8 @@ RABBITUTILISATEUR=historykanban
 RABBITMDP=$(openssl rand -hex 24)
 SAUVEGARDEINTERVALLE=86400
 SAUVEGARDERETENTION=14
+JENKINSADMIN=admin
+JENKINSADMINMDP=$(openssl rand -hex 24)
 EOF
 
 openssl req -x509 -newkey rsa:4096 -sha256 -days 825 -nodes \

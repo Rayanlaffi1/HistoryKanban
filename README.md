@@ -200,6 +200,8 @@ Variables a renseigner dans `.env` (voir `.env.example`, ne jamais commiter le j
 | --- | --- |
 | `JENKINSURL` | URL de Jenkins vue par le serveur (defaut `http://jenkins:8080`) |
 | `JENKINSJOB` | Nom du job (dossiers acceptes, ex. `historykanban/main`) |
+| `JENKINSADMIN` | Premier utilisateur administrateur Jenkins cree au demarrage |
+| `JENKINSADMINMDP` | Mot de passe du premier administrateur Jenkins, genere par le script d'initialisation |
 | `JENKINSUTILISATEUR` | Utilisateur Jenkins proprietaire du jeton API |
 | `JENKINSJETON` | Jeton API Jenkins (profil utilisateur > Security > API Token) |
 | `GITHUBDEPOT` | Depot GitHub `proprietaire/depot` pour detecter les releases |

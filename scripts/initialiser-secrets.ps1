@@ -74,6 +74,8 @@ try {
         "RABBITMDP=$(New-SecretHexadecimal 24)"
         'SAUVEGARDEINTERVALLE=86400'
         'SAUVEGARDERETENTION=14'
+        'JENKINSADMIN=admin'
+        "JENKINSADMINMDP=$(New-SecretHexadecimal 24)"
     )
 
     [System.IO.File]::WriteAllLines(
