@@ -45,6 +45,29 @@ L'acces se fait en HTTPS via Traefik (certificat auto-signe, une exception de se
 | Jenkins | http://localhost:8082 |
 | Tableau de bord Traefik | http://localhost:8083 |
 
+## Acces depuis le reseau local (sslip.io)
+
+L'application est aussi accessible depuis une autre machine du reseau grace aux domaines [sslip.io](https://sslip.io), qui resolvent `historykanban.<IP>.sslip.io` vers `<IP>` sans configuration DNS. Les deux machines doivent pouvoir resoudre les DNS publics (sslip.io est un service DNS public).
+
+1. Trouver l'adresse IP locale de la machine qui heberge la pile : `ipconfig` sous Windows (champ « Adresse IPv4 »), `ip addr` ou `ifconfig` sous Linux et macOS. Exemple : `192.168.1.42`.
+2. Renseigner cette adresse dans `.env` avec la ligne `IPRESEAU=192.168.1.42` (ou generer les secrets avec `.\scripts\initialiser-secrets.ps1 -IpReseau 192.168.1.42` / `./scripts/initialiser-secrets.sh --ip 192.168.1.42`, ce qui ajoute aussi le domaine au certificat).
+3. Redemarrer la pile : `docker compose up -d --build`.
+4. Depuis n'importe quelle machine du reseau, ouvrir :
+
+| Service | URL |
+| --- | --- |
+| Interface | https://historykanban.192.168.1.42.sslip.io |
+| API | https://historykanban.192.168.1.42.sslip.io/api |
+| Keycloak | https://auth.historykanban.192.168.1.42.sslip.io |
+| Images MinIO | https://images.historykanban.192.168.1.42.sslip.io |
+| MailHog | https://courriel.historykanban.192.168.1.42.sslip.io |
+
+Le certificat reste auto-signe : accepter l'exception de securite pour l'interface puis pour Keycloak (ouvrir une fois `https://auth.historykanban.<IP>.sslip.io` dans un onglet). Le routage Traefik accepte n'importe quelle IP dans le domaine, mais la connexion Keycloak et la validation des jetons ne fonctionnent que pour l'adresse declaree dans `IPRESEAU`.
+
+Le realm Keycloak n'est importe qu'au premier demarrage : si la pile a deja tourne avant le changement d'`IPRESEAU`, ajouter `https://historykanban.<IP>.sslip.io/*` aux « Valid redirect URIs » du client `interface` dans la console d'administration Keycloak (ou reinitialiser les volumes avec `docker compose down -v`, ce qui supprime toutes les donnees).
+
+Le fonctionnement via `https://historykanban.localhost` reste inchange : les deux acces cohabitent, l'interface derive ses URL publiques de l'adresse consultee.
+
 ## Premier compte
 
 Aucun compte applicatif n'est preconfigure dans le realm Keycloak. Creer le premier compte depuis la page d'inscription. Le nom de l'administrateur Keycloak est defini dans `.env` et son mot de passe aleatoire est genere localement par le script d'initialisation.
@@ -82,15 +105,16 @@ Chaque membre d'un projet peut generer une cle d'API personnelle depuis le bouto
 | GET | `/taches` | Toutes les taches du tableau (filtrables par `?urgence=`) |
 | GET | `/taches/{id}/soustaches` | Sous-taches d'une tache |
 | POST | `/taches/{id}/soustaches` | Ajouter une sous-tache `{ libelle }` |
+| PUT | `/soustaches/{id}` | Cocher ou decocher une sous-tache `{ faite }`, renommer avec `{ libelle }` |
 | GET | `/corbeille` | Taches supprimees encore restaurables |
 | PUT | `/taches/{id}/restaurer` | Sortir une tache de la corbeille |
 | POST | `/taches` | Creer une tache `{ titre, colonne, description?, points?, urgence?, echeance?, lot?, affectations?, etiquettes? }` |
 | GET | `/taches/{id}` | Detail d'une tache |
-| PUT | `/taches/{id}` | Modifier une tache `{ titre, description?, points?, urgence?, echeance?, lot?, commit? }` |
+| PUT | `/taches/{id}` | Modifier une tache `{ titre, description?, points?, urgence?, echeance?, lot?, urls? }` |
 | PUT | `/taches/{id}/deplacer` | Deplacer une tache `{ colonne, position }` |
 | PUT | `/taches/{id}/affectations` | Remplacer les personnes affectees `{ affectations: [identifiants] }` |
 | PUT | `/taches/{id}/etiquettes` | Remplacer les etiquettes `{ etiquettes: [identifiants] }` |
-| PUT | `/taches/{id}/commit` | Renseigner le commit d'une tache terminee `{ commit }` |
+| PUT | `/taches/{id}/urls` | Renseigner les liens du code d'une tache terminee `{ urls: [liens complets] }` |
 | GET | `/taches/{id}/commentaires` | Lire les commentaires |
 | POST | `/taches/{id}/commentaires` | Commenter `{ contenu }` |
 | GET | `/taches/{id}/activites` | Journal d'activite de la tache |
@@ -159,6 +183,29 @@ docker rm -f verification
 ```
 
 Les images des taches vivent dans MinIO, pas dans Postgres : sauvegarder aussi le volume `minio` si les pieces jointes doivent etre restaurees.
+
+## Mise a jour automatique (Jenkins)
+
+La page Parametres affiche une section « Mise a jour de l'application » reservee aux utilisateurs portant le role realm Keycloak `administrateur` (les roles de groupe lecteur/membre n'y donnent pas acces). Le bouton declenche le pipeline Jenkins qui reconstruit les images et redeploie la stack via `docker compose up -d --build`.
+
+Fonctionnement :
+
+1. Le serveur interroge l'API GitHub (`GITHUBDEPOT`, forme `proprietaire/depot`) pour recuperer le tag de la derniere release et le compare a `VERSIONAPPLICATION`. Si le tag differe, l'interface signale « Une nouvelle release est disponible » : c'est la condition de mise a jour.
+2. `GET /api/systeme/maj` renvoie versions et disponibilite ; `POST /api/systeme/maj` declenche le job Jenkins. Les deux exigent le role `administrateur` et le serveur n'execute aucune commande : il appelle uniquement l'API Jenkins.
+3. Le declenchement utilise `POST {JENKINSURL}/job/{JENKINSJOB}/build` authentifie par jeton API Jenkins (utilisateur + jeton, exempt de crumb CSRF). Le job execute le `Jenkinsfile` du depot : verification, construction des images serveur et interface, puis deploiement.
+
+Variables a renseigner dans `.env` (voir `.env.example`, ne jamais commiter le jeton) :
+
+| Variable | Role |
+| --- | --- |
+| `JENKINSURL` | URL de Jenkins vue par le serveur (defaut `http://jenkins:8080`) |
+| `JENKINSJOB` | Nom du job (dossiers acceptes, ex. `historykanban/main`) |
+| `JENKINSUTILISATEUR` | Utilisateur Jenkins proprietaire du jeton API |
+| `JENKINSJETON` | Jeton API Jenkins (profil utilisateur > Security > API Token) |
+| `GITHUBDEPOT` | Depot GitHub `proprietaire/depot` pour detecter les releases |
+| `VERSIONAPPLICATION` | Version deployee, a aligner sur le tag de la release installee |
+
+Tant que `JENKINSUTILISATEUR` et `JENKINSJETON` sont vides, le bouton reste desactive et l'endpoint repond 503 : rien n'est declenchable par defaut.
 
 ## Depannage
 

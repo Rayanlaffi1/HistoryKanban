@@ -36,11 +36,11 @@ const pointsEntree = [
   { methode: "GET", chemin: "/corbeille", detail: "Tâches supprimées encore restaurables" },
   { methode: "PUT", chemin: "/taches/{id}/restaurer", detail: "Sortir une tâche de la corbeille" },
   { methode: "GET", chemin: "/taches/{id}", detail: "Détail d'une tâche" },
-  { methode: "PUT", chemin: "/taches/{id}", detail: "Modifier une tâche : { titre, description?, points?, urgence?, echeance?, lot?, commit? }" },
+  { methode: "PUT", chemin: "/taches/{id}", detail: "Modifier une tâche : { titre, description?, points?, urgence?, echeance?, lot?, urls? }" },
   { methode: "PUT", chemin: "/taches/{id}/deplacer", detail: "Déplacer vers une colonne : { colonne, position }" },
   { methode: "PUT", chemin: "/taches/{id}/affectations", detail: "Remplacer les personnes affectées : { affectations: [identifiants] }" },
   { methode: "PUT", chemin: "/taches/{id}/etiquettes", detail: "Remplacer les étiquettes : { etiquettes: [identifiants] }" },
-  { methode: "PUT", chemin: "/taches/{id}/commit", detail: "Renseigner le commit une fois la tâche terminée : { commit }" },
+  { methode: "PUT", chemin: "/taches/{id}/urls", detail: "Renseigner les liens du code une fois la tâche terminée : { urls: [liens complets] }" },
   { methode: "GET", chemin: "/taches/{id}/commentaires", detail: "Lire les commentaires" },
   { methode: "POST", chemin: "/taches/{id}/commentaires", detail: "Commenter : { contenu }" },
   { methode: "GET", chemin: "/taches/{id}/activites", detail: "Journal d'activité de la tâche" },
@@ -64,7 +64,7 @@ const exemple = computed(
       <p class="text-sm text-neutral-600 dark:text-neutral-400">
         Cette clé permet à un agent (IA, script, intégration continue…) d'agir sur ce projet en votre nom :
         créer, déplacer et commenter des tâches, affecter les membres du groupe, gérer les étiquettes
-        et les lots, ou renseigner le commit d'une tâche terminée. Elle est personnelle et limitée à ce projet.
+        et les lots, ou renseigner les liens du code d'une tâche terminée. Elle est personnelle et limitée à ce projet.
       </p>
 
       <div class="rounded-xl border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-700 dark:bg-neutral-800/50">

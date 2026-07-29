@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, ref } from "vue"
+import { computed, ref } from "vue"
 import type { Tache } from "@/api/types"
 import {
   televerserFichier,
@@ -9,10 +9,9 @@ import {
   utiliserSuppressionCommentaire,
 } from "@/api/requetes"
 import { depuis } from "@/utilitaires/dates"
-import { assainir, contenuVide } from "@/utilitaires/html"
+import { rendreMarkdown } from "@/utilitaires/markdown"
 import Avatar from "@/composants/ui/Avatar.vue"
 import Bouton from "@/composants/ui/Bouton.vue"
-const ZoneRiche = defineAsyncComponent(() => import("@/composants/ui/ZoneRiche.vue"))
 
 const proprietes = defineProps<{
   tache: Tache
@@ -27,15 +26,34 @@ const mutation = utiliserMutationCommentaire()
 const suppression = utiliserSuppressionCommentaire()
 
 const nouveau = ref("")
+const zone = ref<HTMLTextAreaElement | null>(null)
+const envoiImage = ref(false)
 
-function envoyerImage(fichier: File) {
-  return televerserFichier(proprietes.projet, fichier)
+async function collerImage(evenement: ClipboardEvent) {
+  const fichiers = Array.from(evenement.clipboardData?.files ?? []).filter((fichier) =>
+    fichier.type.startsWith("image/"),
+  )
+  if (!fichiers.length) return
+  evenement.preventDefault()
+  envoiImage.value = true
+  try {
+    for (const fichier of fichiers) {
+      const url = await televerserFichier(proprietes.projet, fichier)
+      const champ = zone.value
+      const position = champ?.selectionStart ?? nouveau.value.length
+      const insertion = `![${fichier.name}](${url})`
+      nouveau.value = nouveau.value.slice(0, position) + insertion + nouveau.value.slice(position)
+    }
+  } finally {
+    envoiImage.value = false
+  }
 }
 
 function commenter() {
-  if (contenuVide(nouveau.value)) return
+  const contenu = nouveau.value.trim()
+  if (!contenu) return
   mutation.mutate(
-    { tache: proprietes.tache.id, contenu: assainir(nouveau.value) },
+    { tache: proprietes.tache.id, contenu },
     { onSuccess: () => (nouveau.value = "") },
   )
 }
@@ -67,7 +85,7 @@ function commenter() {
               Supprimer
             </button>
           </p>
-          <div class="texteriche mt-1 text-sm" v-html="assainir(commentaire.contenu)"></div>
+          <div class="texteriche mt-1 text-sm" v-html="rendreMarkdown(commentaire.contenu)"></div>
         </div>
       </li>
     </ul>
@@ -76,8 +94,18 @@ function commenter() {
     </p>
 
     <form v-if="edition" class="space-y-2 border-t border-neutral-200 pt-4 dark:border-neutral-800" @submit.prevent="commenter">
-      <ZoneRiche v-model="nouveau" compact indication="Écrire un commentaire…" :televerser="envoyerImage" />
-      <div class="flex justify-end">
+      <textarea
+        ref="zone"
+        v-model="nouveau"
+        rows="3"
+        placeholder="Écrire un commentaire…"
+        class="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neutral-400 dark:border-neutral-700 dark:bg-neutral-900 dark:focus:ring-neutral-500"
+        @paste="collerImage"
+      ></textarea>
+      <div class="flex items-center justify-between gap-2">
+        <p class="text-xs text-neutral-500">
+          {{ envoiImage ? "Envoi de l'image…" : "Markdown pris en charge : **gras**, *italique*, listes, [liens](url), `code`. Coller une image l'insère." }}
+        </p>
         <Bouton taille="petite" type="submit" :desactive="mutation.isPending.value">Envoyer</Bouton>
       </div>
     </form>

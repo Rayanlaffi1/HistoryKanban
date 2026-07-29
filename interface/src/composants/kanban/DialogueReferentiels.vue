@@ -11,6 +11,7 @@ import {
 import { depuisChampDate, formaterDateHeure } from "@/utilitaires/dates"
 import Bouton from "@/composants/ui/Bouton.vue"
 import Badge from "@/composants/ui/Badge.vue"
+import ChampCouleur from "@/composants/ui/ChampCouleur.vue"
 import Dialogue from "@/composants/ui/Dialogue.vue"
 import SectionFormulaire from "@/composants/ui/SectionFormulaire.vue"
 
@@ -35,24 +36,24 @@ const erreurEtiquette = ref("")
 const erreurLot = ref("")
 
 function creerEtiquette(projet: string) {
-  const resultat = valider(formulaireEtiquette, { nom: nouvelleEtiquette.nom })
-  erreurEtiquette.value = resultat.erreurs.nom ?? ""
+  const resultat = valider(formulaireEtiquette, { nom: nouvelleEtiquette.nom, couleur: nouvelleEtiquette.couleur })
+  erreurEtiquette.value = resultat.erreurs.nom ?? resultat.erreurs.couleur ?? ""
   if (!resultat.donnees) return
   mutationEtiquette.mutate(
-    { projet, nom: resultat.donnees.nom, couleur: nouvelleEtiquette.couleur },
+    { projet, nom: resultat.donnees.nom, couleur: resultat.donnees.couleur },
     { onSuccess: () => (nouvelleEtiquette.nom = "") },
   )
 }
 
 function creerLot(projet: string) {
-  const resultat = valider(formulaireLot, { nom: nouveauLot.nom })
-  erreurLot.value = resultat.erreurs.nom ?? ""
+  const resultat = valider(formulaireLot, { nom: nouveauLot.nom, couleur: nouveauLot.couleur })
+  erreurLot.value = resultat.erreurs.nom ?? resultat.erreurs.couleur ?? ""
   if (!resultat.donnees) return
   mutationLot.mutate(
     {
       projet,
       nom: resultat.donnees.nom,
-      couleur: nouveauLot.couleur,
+      couleur: resultat.donnees.couleur,
       echeance: depuisChampDate(nouveauLot.echeance),
     },
     {
@@ -66,9 +67,6 @@ function creerLot(projet: string) {
 
 const classeChamp =
   "h-10 rounded-lg border border-neutral-300 bg-white px-3 text-sm shadow-sm transition placeholder:text-neutral-400 focus:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-900/10 dark:border-neutral-700 dark:bg-neutral-900 dark:placeholder:text-neutral-500 dark:focus:border-neutral-400 dark:focus:ring-neutral-100/10"
-
-const classeCouleur =
-  "relative h-10 w-12 shrink-0 cursor-pointer overflow-hidden rounded-lg border border-neutral-300 shadow-sm dark:border-neutral-700"
 </script>
 
 <template>
@@ -92,13 +90,12 @@ const classeCouleur =
           </span>
           <span v-if="!etiquettes.length" class="text-sm text-neutral-500">Aucune étiquette pour le moment.</span>
         </div>
-        <form class="flex items-center gap-2 border-t border-neutral-100 pt-3 dark:border-neutral-800" @submit.prevent="creerEtiquette(projet)">
-          <input v-model="nouvelleEtiquette.nom" placeholder="Nouvelle étiquette" :class="classeChamp" class="flex-1" />
-          <label :class="classeCouleur" title="Couleur">
-            <span class="absolute inset-0" :style="{ backgroundColor: nouvelleEtiquette.couleur }"></span>
-            <input v-model="nouvelleEtiquette.couleur" type="color" class="absolute inset-0 cursor-pointer opacity-0" />
-          </label>
-          <Bouton type="submit" :desactive="mutationEtiquette.isPending.value">Ajouter</Bouton>
+        <form class="space-y-2 border-t border-neutral-100 pt-3 dark:border-neutral-800" @submit.prevent="creerEtiquette(projet)">
+          <div class="flex items-center gap-2">
+            <input v-model="nouvelleEtiquette.nom" placeholder="Nouvelle étiquette" :class="classeChamp" class="flex-1" />
+            <Bouton type="submit" :desactive="mutationEtiquette.isPending.value">Ajouter</Bouton>
+          </div>
+          <ChampCouleur v-model="nouvelleEtiquette.couleur" />
         </form>
         <p v-if="erreurEtiquette" class="text-xs font-medium text-red-700 dark:text-red-500">{{ erreurEtiquette }}</p>
       </SectionFormulaire>
@@ -130,15 +127,10 @@ const classeCouleur =
         <form class="space-y-2 border-t border-neutral-100 pt-3 dark:border-neutral-800" @submit.prevent="creerLot(projet)">
           <div class="flex items-center gap-2">
             <input v-model="nouveauLot.nom" placeholder="Nouveau lot" :class="classeChamp" class="flex-1" />
-            <label :class="classeCouleur" title="Couleur">
-              <span class="absolute inset-0" :style="{ backgroundColor: nouveauLot.couleur }"></span>
-              <input v-model="nouveauLot.couleur" type="color" class="absolute inset-0 cursor-pointer opacity-0" />
-            </label>
-          </div>
-          <div class="flex items-center gap-2">
             <input v-model="nouveauLot.echeance" type="datetime-local" :class="classeChamp" class="flex-1" />
             <Bouton type="submit" :desactive="mutationLot.isPending.value">Ajouter</Bouton>
           </div>
+          <ChampCouleur v-model="nouveauLot.couleur" />
         </form>
         <p v-if="erreurLot" class="text-xs font-medium text-red-700 dark:text-red-500">{{ erreurLot }}</p>
       </SectionFormulaire>

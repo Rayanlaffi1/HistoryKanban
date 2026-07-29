@@ -1,10 +1,11 @@
 import axios from "axios"
+import { urlAPI } from "@/configuration"
 import { jeton, seDeconnecter } from "@/securite/keycloak"
 import { extraireErreur } from "@/utilitaires/erreurs"
 import { utiliserMagasinNotifications } from "@/magasins/notifications"
 
 export const client = axios.create({
-  baseURL: (import.meta.env.VITE_URLAPI ?? "https://api.historykanban.localhost") + "/api",
+  baseURL: urlAPI + "/api",
 })
 
 client.interceptors.request.use((requete) => {

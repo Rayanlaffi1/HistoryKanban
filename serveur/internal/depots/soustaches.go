@@ -82,6 +82,14 @@ func (d *Depot) SupprimerSousTache(ctx context.Context, id string) error {
 	return erreur
 }
 
+func (d *Depot) ProjetSousTache(ctx context.Context, sousTache string) (string, error) {
+	var projet string
+	erreur := d.bd.QueryRow(ctx, `
+		SELECT t.projet FROM soustaches s JOIN taches t ON t.id = s.tache WHERE s.id = $1`, sousTache).
+		Scan(&projet)
+	return projet, erreur
+}
+
 func (d *Depot) SousTache(ctx context.Context, id string) (*modeles.SousTache, error) {
 	var sousTache modeles.SousTache
 	erreur := d.bd.QueryRow(ctx, `

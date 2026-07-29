@@ -21,11 +21,15 @@ type Revendications struct {
 }
 
 type Verificateur struct {
-	cles     keyfunc.Keyfunc
-	emetteur string
+	cles      keyfunc.Keyfunc
+	emetteurs map[string]bool
 }
 
-func NouveauVerificateur(urlJWKS, emetteur string) (*Verificateur, error) {
+func NouveauVerificateur(urlJWKS string, emetteurs []string) (*Verificateur, error) {
+	acceptes := make(map[string]bool, len(emetteurs))
+	for _, emetteur := range emetteurs {
+		acceptes[emetteur] = true
+	}
 	var erreur error
 	for tentative := 0; tentative < 60; tentative++ {
 		var cles keyfunc.Keyfunc
@@ -36,7 +40,7 @@ func NouveauVerificateur(urlJWKS, emetteur string) (*Verificateur, error) {
 			annuler()
 			if erreurLecture == nil && len(jeu) > 0 {
 				log.Printf("JWKS charge avec %d cle(s) depuis %s", len(jeu), urlJWKS)
-				return &Verificateur{cles: cles, emetteur: emetteur}, nil
+				return &Verificateur{cles: cles, emetteurs: acceptes}, nil
 			}
 			erreur = errors.New("jeu de cles JWKS vide, Keycloak pas encore pret")
 		}
@@ -58,7 +62,6 @@ func (v *Verificateur) Verifier(brut string) (*Revendications, error) {
 		brut,
 		v.cles.Keyfunc,
 		jwt.WithValidMethods([]string{"RS256"}),
-		jwt.WithIssuer(v.emetteur),
 		jwt.WithExpirationRequired(),
 	)
 	if erreur != nil {
@@ -67,6 +70,10 @@ func (v *Verificateur) Verifier(brut string) (*Revendications, error) {
 	revendications, valide := jeton.Claims.(jwt.MapClaims)
 	if !valide {
 		return nil, errors.New("revendications invalides")
+	}
+	emetteur, erreur := revendications.GetIssuer()
+	if erreur != nil || !v.emetteurs[emetteur] {
+		return nil, errors.New("emetteur du jeton non autorise")
 	}
 	resultat := &Revendications{
 		Utilisateur: chaine(revendications, "sub"),

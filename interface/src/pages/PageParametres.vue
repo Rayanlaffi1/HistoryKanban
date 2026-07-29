@@ -1,7 +1,13 @@
 <script setup lang="ts">
-import { reactive, watch } from "vue"
+import { computed, reactive, watch } from "vue"
 import { useDark } from "@vueuse/core"
-import { utiliserPreferences, utiliserMutationPreferences, utiliserProfil } from "@/api/requetes"
+import {
+  utiliserEtatMaj,
+  utiliserMutationMaj,
+  utiliserMutationPreferences,
+  utiliserPreferences,
+  utiliserProfil,
+} from "@/api/requetes"
 import { typesNotifications } from "@/api/types"
 import Bascule from "@/composants/ui/Bascule.vue"
 import Bouton from "@/composants/ui/Bouton.vue"
@@ -36,6 +42,16 @@ function enregistrer() {
     { courriels: formulaire.courriels, types: { ...formulaire.types } },
     { onSuccess: () => magasin.annoncer("Préférences enregistrées", "") },
   )
+}
+
+const estAdministrateur = computed(() => profil.value?.roles?.includes("administrateur") ?? false)
+const { data: etatMaj, isLoading: etatMajEnCours } = utiliserEtatMaj(estAdministrateur)
+const mutationMaj = utiliserMutationMaj()
+
+function mettreAJour() {
+  mutationMaj.mutate(undefined, {
+    onSuccess: () => magasin.annoncer("Mise à jour lancée", "Le pipeline Jenkins reconstruit et redéploie l'application."),
+  })
 }
 </script>
 
@@ -90,6 +106,45 @@ function enregistrer() {
       </div>
       <div class="mt-6 flex justify-end">
         <Bouton :desactive="mutation.isPending.value" @click="enregistrer">Enregistrer</Bouton>
+      </div>
+    </section>
+
+    <section
+      v-if="estAdministrateur"
+      class="mt-6 rounded-xl border border-neutral-200 bg-white p-6 dark:border-neutral-800 dark:bg-neutral-900"
+    >
+      <h2 class="font-semibold">Mise à jour de l'application</h2>
+      <p class="mt-1 text-sm text-neutral-500">
+        Déclenche le pipeline Jenkins qui reconstruit et redéploie l'application depuis la dernière version publiée.
+      </p>
+      <div class="mt-4 space-y-1 text-sm">
+        <p v-if="etatMajEnCours" class="text-neutral-500">Vérification de la version…</p>
+        <template v-else-if="etatMaj">
+          <p>Version installée : {{ etatMaj.versionActuelle }}</p>
+          <p v-if="etatMaj.derniereVersion">Dernière release GitHub : {{ etatMaj.derniereVersion }}</p>
+          <p v-if="etatMaj.majDisponible" class="font-medium text-amber-700 dark:text-amber-500">
+            Une nouvelle release est disponible.
+          </p>
+          <p v-else-if="etatMaj.derniereVersion" class="text-neutral-500">L'application est à jour.</p>
+          <p v-if="!etatMaj.jenkinsConfigure" class="text-red-700 dark:text-red-500">
+            Le déclenchement Jenkins n'est pas configuré sur le serveur.
+          </p>
+        </template>
+      </div>
+      <div class="mt-6 flex items-center justify-end gap-3">
+        <p v-if="mutationMaj.isPending.value" class="text-sm text-neutral-500">Déclenchement en cours…</p>
+        <p v-else-if="mutationMaj.isSuccess.value" class="text-sm text-green-700 dark:text-green-500">
+          Mise à jour lancée.
+        </p>
+        <p v-else-if="mutationMaj.isError.value" class="text-sm text-red-700 dark:text-red-500">
+          Le déclenchement a échoué.
+        </p>
+        <Bouton
+          :desactive="mutationMaj.isPending.value || !etatMaj?.jenkinsConfigure"
+          @click="mettreAJour"
+        >
+          Mettre à jour l'application
+        </Bouton>
       </div>
     </section>
   </div>

@@ -1,5 +1,6 @@
 param(
-    [switch]$Force
+    [switch]$Force,
+    [string]$IpReseau = '127.0.0.1'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -51,9 +52,10 @@ $cleTemporaire = "$fichierCle.$suffixeTemporaire.tmp"
 $certificatTemporaire = "$fichierCertificat.$suffixeTemporaire.tmp"
 
 try {
+    $nomsAlternatifs = "subjectAltName=DNS:historykanban.localhost,DNS:*.historykanban.localhost,DNS:localhost,DNS:historykanban.$IpReseau.sslip.io,DNS:*.historykanban.$IpReseau.sslip.io,IP:127.0.0.1,IP:::1"
     & $openSsl req -x509 -newkey rsa:4096 -sha256 -days 825 -nodes `
         -subj '/CN=historykanban.localhost' `
-        -addext 'subjectAltName=DNS:historykanban.localhost,DNS:*.historykanban.localhost,DNS:localhost,IP:127.0.0.1,IP:::1' `
+        -addext $nomsAlternatifs `
         -keyout $cleTemporaire -out $certificatTemporaire
     if ($LASTEXITCODE -ne 0) {
         throw "OpenSSL a echoue avec le code $LASTEXITCODE."
@@ -63,6 +65,7 @@ try {
         "BDMDP=$(New-SecretHexadecimal 24)"
         'BDNOM=historykanban'
         'BDUTILISATEUR=historykanban'
+        "IPRESEAU=$IpReseau"
         'KEYCLOAKADMIN=admin'
         "KEYCLOAKADMINMDP=$(New-SecretHexadecimal 24)"
         "MINIOCLE=$(New-SecretHexadecimal 10)"

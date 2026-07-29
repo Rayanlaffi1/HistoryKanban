@@ -43,10 +43,12 @@ export const formulaireTache = z.object({
 
 export const formulaireEtiquette = z.object({
   nom: nomCourt("Le nom de l'étiquette est requis", 50),
+  couleur: couleurHexadecimale,
 })
 
 export const formulaireLot = z.object({
   nom: nomCourt("Le nom du lot est requis"),
+  couleur: couleurHexadecimale,
 })
 
 export function valider<Schema extends z.ZodTypeAny>(

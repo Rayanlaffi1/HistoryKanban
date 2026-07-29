@@ -16,6 +16,7 @@ import { assainir } from "@/utilitaires/html"
 import { typesAcceptes } from "@/utilitaires/fichiers"
 import Bouton from "@/composants/ui/Bouton.vue"
 import Champ from "@/composants/ui/Champ.vue"
+import Zone from "@/composants/ui/Zone.vue"
 const ZoneRiche = defineAsyncComponent(() => import("@/composants/ui/ZoneRiche.vue"))
 import Selection from "@/composants/ui/Selection.vue"
 import Dialogue from "@/composants/ui/Dialogue.vue"
@@ -37,7 +38,6 @@ const proprietes = defineProps<{
   tache: Tache | null
   colonneInitiale: string
   edition: boolean
-  depot?: string
 }>()
 
 const emissions = defineEmits<{ fermer: [] }>()
@@ -58,7 +58,7 @@ const formulaire = reactive({
   points: "0",
   urgence: "normale",
   echeance: "",
-  commit: "",
+  urls: "",
   affectations: [] as string[],
   etiquettes: [] as string[],
 })
@@ -101,7 +101,7 @@ watch(
     formulaire.points = String(proprietes.tache?.points ?? 0)
     formulaire.urgence = proprietes.tache?.urgence ?? "normale"
     formulaire.echeance = versChampDate(proprietes.tache?.echeance)
-    formulaire.commit = proprietes.tache?.commit ?? ""
+    formulaire.urls = (proprietes.tache?.urls ?? []).join("\n")
     formulaire.affectations = [...(proprietes.tache?.affectations ?? [])]
     formulaire.etiquettes = [...(proprietes.tache?.etiquettes ?? [])]
   },
@@ -165,7 +165,10 @@ function enregistrer() {
       points: Number(resultat.donnees.points) || 0,
       urgence: formulaire.urgence,
       echeance: depuisChampDate(formulaire.echeance),
-      commit: formulaire.commit.trim(),
+      urls: formulaire.urls
+        .split("\n")
+        .map((lien) => lien.trim())
+        .filter(Boolean),
       affectations: formulaire.affectations,
       etiquettes: formulaire.etiquettes,
     },
@@ -243,7 +246,6 @@ function supprimer() {
           :membres="membres"
           :etiquettes="etiquettes"
           :lots="lots"
-          :depot="depot"
         />
         <SousTachesTache :tache="tache" :projet="projet" :edition="false" />
       </div>
@@ -274,7 +276,14 @@ function supprimer() {
             <Selection v-model="formulaire.urgence" etiquette="Urgence">
               <option v-for="niveau in urgences" :key="niveau" :value="niveau">{{ libellesUrgences[niveau] }}</option>
             </Selection>
-            <Champ v-if="tache" v-model="formulaire.commit" etiquette="Commit" indication="abc1234" />
+            <div v-if="tache" class="sm:col-span-2">
+              <Zone
+                v-model="formulaire.urls"
+                etiquette="Liens du code"
+                :lignes="2"
+                indication="https://github.com/organisation/projet/commit/abc1234 — un lien complet par ligne"
+              />
+            </div>
           </div>
         </SectionFormulaire>
 

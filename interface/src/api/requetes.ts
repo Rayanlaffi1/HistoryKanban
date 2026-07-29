@@ -6,6 +6,7 @@ import {
   schemaActivite,
   schemaCommentaire,
   schemaDetailProjet,
+  schemaEtatMaj,
   schemaGroupe,
   schemaMembre,
   schemaNotification,
@@ -198,7 +199,7 @@ export function utiliserRetraitMembre() {
 
 export function utiliserMutationProjet() {
   return useMutation({
-    mutationFn: (corps: { id?: string; groupe: string; nom: string; description: string; couleur: string; depot?: string; archive?: boolean }) =>
+    mutationFn: (corps: { id?: string; groupe: string; nom: string; description: string; couleur: string; archive?: boolean }) =>
       corps.id ? client.put(`/projets/${corps.id}`, corps) : client.post(`/groupes/${corps.groupe}/projets`, corps),
     onSuccess: invalidation((variables: { id?: string; groupe: string }) => [
       ["projets", variables.groupe],
@@ -278,7 +279,7 @@ export interface CorpsTache {
   points: number
   urgence: string
   echeance: string | null
-  commit?: string
+  urls?: string[]
   affectations: string[]
   etiquettes: string[]
 }
@@ -425,5 +426,19 @@ export function utiliserMutationPreferences() {
   return useMutation({
     mutationFn: (corps: Omit<Preferences, "utilisateur">) => client.put("/moi/preferences", corps),
     onSuccess: invalidation(() => [["preferences"]]),
+  })
+}
+
+export function utiliserEtatMaj(actif: Ref<boolean>) {
+  return useQuery({
+    queryKey: ["systeme", "maj"],
+    queryFn: async () => schemaEtatMaj.parse((await client.get("/systeme/maj")).data),
+    enabled: actif,
+  })
+}
+
+export function utiliserMutationMaj() {
+  return useMutation({
+    mutationFn: () => client.post("/systeme/maj"),
   })
 }

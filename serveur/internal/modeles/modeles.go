@@ -42,7 +42,6 @@ type Projet struct {
 	Description string    `json:"description"`
 	Couleur     string    `json:"couleur"`
 	Archive     bool      `json:"archive"`
-	Depot       string    `json:"depot"`
 	Createur    string    `json:"createur"`
 	Creation    time.Time `json:"creation"`
 	NbTaches    int       `json:"nbtaches"`
@@ -103,7 +102,7 @@ type Tache struct {
 	Points       int         `json:"points"`
 	Urgence      string      `json:"urgence"`
 	Echeance     *time.Time  `json:"echeance"`
-	Commit       string      `json:"commit"`
+	URLs         []string    `json:"urls"`
 	Position     int         `json:"position"`
 	Suppression  *time.Time  `json:"suppression"`
 	Createur     string      `json:"createur"`

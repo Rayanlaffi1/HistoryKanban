@@ -11,6 +11,13 @@ export const schemaProfil = schemaUtilisateur.extend({
   roles: z.array(z.string()).nullish(),
 })
 
+export const schemaEtatMaj = z.object({
+  versionActuelle: z.string(),
+  derniereVersion: z.string(),
+  majDisponible: z.boolean(),
+  jenkinsConfigure: z.boolean(),
+})
+
 export const schemaGroupe = z.object({
   id: z.string(),
   nom: z.string(),
@@ -40,7 +47,6 @@ export const schemaProjet = z.object({
   description: z.string(),
   couleur: z.string(),
   archive: z.boolean(),
-  depot: z.string().default(""),
   createur: z.string(),
   creation: z.string(),
   nbtaches: z.number().optional().default(0),
@@ -101,7 +107,10 @@ export const schemaTache = z.object({
   points: z.number(),
   urgence: z.enum(["faible", "normale", "elevee", "urgente"]).default("normale"),
   echeance: z.string().nullable(),
-  commit: z.string().default(""),
+  urls: z
+    .array(z.string())
+    .nullish()
+    .transform((valeur) => valeur ?? []),
   position: z.number(),
   suppression: z.string().nullable().default(null),
   createur: z.string(),

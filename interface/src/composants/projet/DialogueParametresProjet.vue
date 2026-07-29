@@ -18,7 +18,6 @@ const formulaire = reactive({
   nom: "",
   description: "",
   couleur: "#737373",
-  depot: "",
   archive: false,
 })
 
@@ -32,7 +31,6 @@ watch(
     formulaire.nom = proprietes.projet.nom
     formulaire.description = proprietes.projet.description
     formulaire.couleur = proprietes.projet.couleur
-    formulaire.depot = proprietes.projet.depot
     formulaire.archive = proprietes.projet.archive
     erreurs.value = {}
     erreurApi.value = ""
@@ -56,7 +54,6 @@ function enregistrer() {
       id: proprietes.projet.id,
       groupe: proprietes.projet.groupe,
       ...resultat.donnees,
-      depot: formulaire.depot.trim(),
       archive: formulaire.archive,
     },
     {
@@ -75,14 +72,6 @@ function enregistrer() {
       <Champ v-model="formulaire.nom" etiquette="Nom" obligatoire :erreur="erreurs.nom" />
       <Zone v-model="formulaire.description" etiquette="Description" :erreur="erreurs.description" />
       <ChampCouleur v-model="formulaire.couleur" etiquette="Couleur du projet" />
-      <Champ
-        v-model="formulaire.depot"
-        etiquette="Dépôt du code"
-        indication="https://github.com/organisation/projet"
-      />
-      <p class="-mt-2 text-xs text-neutral-500">
-        Le commit renseigné sur une tâche devient un lien vers ce dépôt.
-      </p>
       <Bascule v-model="formulaire.archive" etiquette="Projet archivé" />
       <p v-if="erreurApi" class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800 dark:bg-red-950/40 dark:text-red-300">
         {{ erreurApi }}

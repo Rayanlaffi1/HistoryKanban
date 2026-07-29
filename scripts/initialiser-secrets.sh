@@ -2,12 +2,25 @@
 set -eu
 
 force=false
-if [ "${1:-}" = "--force" ]; then
-  force=true
-elif [ "$#" -gt 0 ]; then
-  echo "Usage: $0 [--force]" >&2
-  exit 2
-fi
+ip_reseau=127.0.0.1
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --force) force=true ;;
+    --ip)
+      shift
+      if [ "$#" -eq 0 ]; then
+        echo "Usage: $0 [--force] [--ip ADRESSE]" >&2
+        exit 2
+      fi
+      ip_reseau=$1
+      ;;
+    *)
+      echo "Usage: $0 [--force] [--ip ADRESSE]" >&2
+      exit 2
+      ;;
+  esac
+  shift
+done
 
 command -v openssl >/dev/null 2>&1 || {
   echo "OpenSSL est requis." >&2
@@ -36,6 +49,7 @@ cat >"$dossier_temporaire/.env" <<EOF
 BDMDP=$(openssl rand -hex 24)
 BDNOM=historykanban
 BDUTILISATEUR=historykanban
+IPRESEAU=$ip_reseau
 KEYCLOAKADMIN=admin
 KEYCLOAKADMINMDP=$(openssl rand -hex 24)
 MINIOCLE=$(openssl rand -hex 10)
@@ -48,7 +62,7 @@ EOF
 
 openssl req -x509 -newkey rsa:4096 -sha256 -days 825 -nodes \
   -subj '/CN=historykanban.localhost' \
-  -addext 'subjectAltName=DNS:historykanban.localhost,DNS:*.historykanban.localhost,DNS:localhost,IP:127.0.0.1,IP:::1' \
+  -addext "subjectAltName=DNS:historykanban.localhost,DNS:*.historykanban.localhost,DNS:localhost,DNS:historykanban.$ip_reseau.sslip.io,DNS:*.historykanban.$ip_reseau.sslip.io,IP:127.0.0.1,IP:::1" \
   -keyout "$dossier_temporaire/historykanban.key" \
   -out "$dossier_temporaire/historykanban.crt"
 

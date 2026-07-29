@@ -14,7 +14,6 @@ const proprietes = defineProps<{
   membres: Membre[]
   etiquettes: Etiquette[]
   lots: Lot[]
-  depot?: string
 }>()
 
 const nomColonne = computed(
@@ -27,11 +26,6 @@ const etiquettesCourantes = computed(() =>
 const membresAffectes = computed(() =>
   proprietes.membres.filter((membre) => proprietes.tache.affectations.includes(membre.utilisateur)),
 )
-
-const lienCommit = computed(() => {
-  if (!proprietes.depot || !proprietes.tache.commit) return ""
-  return `${proprietes.depot.replace(/\/+$/, "")}/commit/${proprietes.tache.commit}`
-})
 </script>
 
 <template>
@@ -72,19 +66,19 @@ const lienCommit = computed(() => {
       <dd class="font-medium">{{ tache.echeance ? formaterDateHeure(tache.echeance) : "—" }}</dd>
       <dt class="text-neutral-500">Créée le</dt>
       <dd class="font-medium">{{ formaterDateHeure(tache.creation) }}</dd>
-      <template v-if="tache.commit">
-        <dt class="text-neutral-500">Commit</dt>
-        <dd class="font-mono text-xs font-medium">
+      <template v-if="tache.urls.length">
+        <dt class="text-neutral-500">Liens du code</dt>
+        <dd class="min-w-0 space-y-1 font-mono text-xs font-medium">
           <a
-            v-if="lienCommit"
-            :href="lienCommit"
+            v-for="lien in tache.urls"
+            :key="lien"
+            :href="lien"
             target="_blank"
             rel="noopener"
-            class="underline decoration-neutral-400 underline-offset-2 hover:decoration-neutral-900 dark:hover:decoration-neutral-100"
+            class="block truncate underline decoration-neutral-400 underline-offset-2 hover:decoration-neutral-900 dark:hover:decoration-neutral-100"
           >
-            {{ tache.commit }}
+            {{ lien }}
           </a>
-          <template v-else>{{ tache.commit }}</template>
         </dd>
       </template>
     </dl>

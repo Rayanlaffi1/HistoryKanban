@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -55,9 +56,33 @@ type corpsTache struct {
 	Points       int        `json:"points"`
 	Urgence      string     `json:"urgence"`
 	Echeance     *time.Time `json:"echeance"`
-	Commit       *string    `json:"commit"`
+	URLs         []string   `json:"urls"`
 	Affectations []string   `json:"affectations"`
 	Etiquettes   []string   `json:"etiquettes"`
+}
+
+func nettoyerURLs(valeurs []string) ([]string, string) {
+	urls := []string{}
+	vues := map[string]bool{}
+	for _, valeur := range valeurs {
+		lien := strings.TrimSpace(valeur)
+		if lien == "" || vues[lien] {
+			continue
+		}
+		if len([]rune(lien)) > 500 {
+			return nil, "un lien ne doit pas depasser 500 caracteres"
+		}
+		analyse, erreur := url.Parse(lien)
+		if erreur != nil || (analyse.Scheme != "http" && analyse.Scheme != "https") || analyse.Host == "" {
+			return nil, "chaque lien doit etre une URL complete commencant par http:// ou https://"
+		}
+		vues[lien] = true
+		urls = append(urls, lien)
+	}
+	if len(urls) > 20 {
+		return nil, "une tache ne peut pas porter plus de 20 liens"
+	}
+	return urls, ""
 }
 
 var urgencesAutorisees = map[string]bool{
@@ -138,9 +163,17 @@ func (s *Serveur) modifierTache(c *gin.Context) {
 		return
 	}
 	contexte := c.Request.Context()
-	commit := tache.Commit
-	if corps.Commit != nil {
-		commit = strings.TrimSpace(*corps.Commit)
+	urls := tache.URLs
+	if corps.URLs != nil {
+		nettoyees, message := nettoyerURLs(corps.URLs)
+		if message != "" {
+			c.JSON(http.StatusBadRequest, gin.H{"erreur": message})
+			return
+		}
+		urls = nettoyees
+	}
+	if urls == nil {
+		urls = []string{}
 	}
 	urgence := tache.Urgence
 	if corps.Urgence != "" {
@@ -158,7 +191,7 @@ func (s *Serveur) modifierTache(c *gin.Context) {
 		Urgence:     urgence,
 		Echeance:    corps.Echeance,
 		Lot:         corps.Lot,
-		Commit:      commit,
+		URLs:        urls,
 	}); erreur != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"erreur": "modification de la tache impossible"})
 		return

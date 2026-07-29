@@ -21,6 +21,12 @@ type Configuration struct {
 	SMTPPort            string
 	SMTPExpediteur      string
 	Origines            []string
+	JenkinsURL          string
+	JenkinsJob          string
+	JenkinsUtilisateur  string
+	JenkinsJeton        string
+	GithubDepot         string
+	VersionApplication  string
 }
 
 func lire(cle, defaut string) string {
@@ -48,6 +54,12 @@ func Charger() Configuration {
 		SMTPPort:            lire("SMTPPORT", "1025"),
 		SMTPExpediteur:      lire("SMTPEXPEDITEUR", "notifications@historykanban.fr"),
 		Origines:            strings.Split(lire("ORIGINES", "http://localhost:5173"), ","),
+		JenkinsURL:          lire("JENKINSURL", ""),
+		JenkinsJob:          lire("JENKINSJOB", ""),
+		JenkinsUtilisateur:  lire("JENKINSUTILISATEUR", ""),
+		JenkinsJeton:        lire("JENKINSJETON", ""),
+		GithubDepot:         lire("GITHUBDEPOT", ""),
+		VersionApplication:  lire("VERSIONAPPLICATION", "dev"),
 	}
 }
 
@@ -55,6 +67,16 @@ func (c Configuration) URLJWKS() string {
 	return c.KeycloakURL + "/realms/" + c.KeycloakRealm + "/protocol/openid-connect/certs"
 }
 
-func (c Configuration) Emetteur() string {
-	return c.KeycloakURLPublique + "/realms/" + c.KeycloakRealm
+// Emetteurs accepte une liste d'URL publiques separees par des virgules,
+// pour valider les jetons emis via historykanban.localhost comme via un
+// domaine reseau du type historykanban.<IP>.sslip.io.
+func (c Configuration) Emetteurs() []string {
+	var emetteurs []string
+	for _, base := range strings.Split(c.KeycloakURLPublique, ",") {
+		base = strings.TrimRight(strings.TrimSpace(base), "/")
+		if base != "" {
+			emetteurs = append(emetteurs, base+"/realms/"+c.KeycloakRealm)
+		}
+	}
+	return emetteurs
 }

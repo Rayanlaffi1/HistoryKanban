@@ -48,6 +48,10 @@ func (s *Serveur) Routeur() *gin.Engine {
 	api.GET("/moi/preferences", s.obtenirPreferences)
 	api.PUT("/moi/preferences", s.enregistrerPreferences)
 
+	systeme := api.Group("/systeme", s.exigerAdministrateurPlateforme())
+	systeme.GET("/maj", s.etatMiseAJour)
+	systeme.POST("/maj", s.declencherMiseAJour)
+
 	api.GET("/notifications", s.listerNotifications)
 	api.PUT("/notifications/tout", s.toutMarquerLu)
 	api.PUT("/notifications/:id/lue", s.marquerLue)
@@ -97,7 +101,7 @@ func (s *Serveur) Routeur() *gin.Engine {
 	api.GET("/projets/:id/corbeille", s.listerCorbeille)
 	api.PUT("/taches/:id/restaurer", s.restaurerTache)
 	api.DELETE("/taches/:id/definitif", s.purgerTache)
-	api.PUT("/taches/:id/commit", s.agentRenseignerCommit)
+	api.PUT("/taches/:id/urls", s.agentRenseignerURLs)
 	api.GET("/taches/:id/activites", s.listerActivites)
 	api.GET("/taches/:id/commentaires", s.listerCommentaires)
 	api.POST("/taches/:id/commentaires", s.creerCommentaire)
@@ -119,7 +123,7 @@ func (s *Serveur) Routeur() *gin.Engine {
 	agent.GET("/taches/:id", s.verifierTacheAgent(s.agentObtenirTache))
 	agent.PUT("/taches/:id", s.verifierTacheAgent(s.modifierTache))
 	agent.PUT("/taches/:id/deplacer", s.verifierTacheAgent(s.deplacerTache))
-	agent.PUT("/taches/:id/commit", s.verifierTacheAgent(s.agentRenseignerCommit))
+	agent.PUT("/taches/:id/urls", s.verifierTacheAgent(s.agentRenseignerURLs))
 	agent.PUT("/taches/:id/affectations", s.verifierTacheAgent(s.agentAffecter))
 	agent.PUT("/taches/:id/etiquettes", s.verifierTacheAgent(s.agentEtiqueter))
 	agent.GET("/taches/:id/commentaires", s.verifierTacheAgent(s.listerCommentaires))
@@ -127,6 +131,7 @@ func (s *Serveur) Routeur() *gin.Engine {
 	agent.GET("/taches/:id/activites", s.verifierTacheAgent(s.listerActivites))
 	agent.GET("/taches/:id/soustaches", s.verifierTacheAgent(s.listerSousTaches))
 	agent.POST("/taches/:id/soustaches", s.verifierTacheAgent(s.creerSousTache))
+	agent.PUT("/soustaches/:id", s.verifierSousTacheAgent(s.modifierSousTache))
 	agent.GET("/corbeille", s.forcerProjetAgent(s.listerCorbeille))
 	agent.PUT("/taches/:id/restaurer", s.verifierTacheAgent(s.restaurerTache))
 

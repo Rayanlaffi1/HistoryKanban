@@ -83,6 +83,17 @@ func (s *Serveur) verifierLotAgent(suivant gin.HandlerFunc) gin.HandlerFunc {
 	}
 }
 
+func (s *Serveur) verifierSousTacheAgent(suivant gin.HandlerFunc) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		projet, erreur := s.Depot.ProjetSousTache(c.Request.Context(), c.Param("id"))
+		if erreur != nil || projet != c.GetString("projetagent") {
+			c.JSON(http.StatusNotFound, gin.H{"erreur": "sous-tache introuvable dans ce projet"})
+			return
+		}
+		suivant(c)
+	}
+}
+
 func (s *Serveur) agentListerMembres(c *gin.Context) {
 	projet, autorise := s.exigerRoleProjet(c, c.GetString("projetagent"), "lecteur")
 	if !autorise {
@@ -164,27 +175,27 @@ func (s *Serveur) agentObtenirTache(c *gin.Context) {
 	c.JSON(http.StatusOK, s.remplirURLsTache(tache))
 }
 
-type corpsCommit struct {
-	Commit string `json:"commit"`
+type corpsURLs struct {
+	URLs []string `json:"urls"`
 }
 
-func (s *Serveur) agentRenseignerCommit(c *gin.Context) {
+func (s *Serveur) agentRenseignerURLs(c *gin.Context) {
 	tache, projet, autorise := s.tacheAutorisee(c, "membre")
 	if !autorise {
 		return
 	}
-	var corps corpsCommit
+	var corps corpsURLs
 	if erreur := c.ShouldBindJSON(&corps); erreur != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"erreur": "corps invalide"})
 		return
 	}
-	commit := strings.TrimSpace(corps.Commit)
-	if len([]rune(commit)) > 100 {
-		c.JSON(http.StatusBadRequest, gin.H{"erreur": "le commit ne doit pas depasser 100 caracteres"})
+	urls, message := nettoyerURLs(corps.URLs)
+	if message != "" {
+		c.JSON(http.StatusBadRequest, gin.H{"erreur": message})
 		return
 	}
-	if erreur := s.Depot.ModifierCommit(c.Request.Context(), tache.ID, commit); erreur != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"erreur": "enregistrement du commit impossible"})
+	if erreur := s.Depot.ModifierURLs(c.Request.Context(), tache.ID, urls); erreur != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"erreur": "enregistrement des liens impossible"})
 		return
 	}
 	resultat, erreur := s.Depot.Tache(c.Request.Context(), tache.ID)

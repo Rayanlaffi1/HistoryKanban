@@ -339,7 +339,6 @@ function supprimerColonne() {
       :tache="tacheOuverte"
       :colonne-initiale="colonneInitiale"
       :edition="edition"
-      :depot="detail?.projet.depot ?? ''"
       @fermer="dialogueTache = false"
     />
 

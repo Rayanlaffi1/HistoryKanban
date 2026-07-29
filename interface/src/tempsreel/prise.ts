@@ -2,6 +2,7 @@ import { ref } from "vue"
 import type { QueryClient } from "@tanstack/vue-query"
 import { useLocalStorage } from "@vueuse/core"
 import { client } from "@/api/client"
+import { urlWS } from "@/configuration"
 import { jeton, seDeconnecter } from "@/securite/keycloak"
 import { utiliserMagasinNotifications } from "@/magasins/notifications"
 import { typesNotifications } from "@/api/types"
@@ -38,7 +39,7 @@ export function demarrerTempsReel(clientRequetes: QueryClient) {
   const magasin = utiliserMagasinNotifications()
 
   function connecter() {
-    const base = import.meta.env.VITE_URLWS ?? "wss://api.historykanban.localhost"
+    const base = urlWS
     prise = new WebSocket(`${base}/ws?jeton=${jeton()}`)
     prise.onopen = () => {
       for (const projet of abonnements) {

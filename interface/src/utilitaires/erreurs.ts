@@ -1,6 +1,7 @@
 import { AxiosError } from "axios"
+import { urlAPI } from "@/configuration"
 
-const baseAPI = import.meta.env.VITE_URLAPI ?? "https://api.historykanban.localhost"
+const baseAPI = urlAPI
 
 export function extraireErreur(erreur: unknown): string {
   if (erreur instanceof AxiosError) {

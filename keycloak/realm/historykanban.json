@@ -121,7 +121,11 @@
       "fullScopeAllowed": true,
       "rootUrl": "https://historykanban.localhost",
       "baseUrl": "/",
-      "redirectUris": ["https://historykanban.localhost/*", "http://localhost:5173/*"],
+      "redirectUris": [
+        "https://historykanban.localhost/*",
+        "http://localhost:5173/*",
+        "https://__DOMAINERESEAU__/*"
+      ],
       "webOrigins": ["+"],
       "attributes": {
         "pkce.code.challenge.method": "S256",

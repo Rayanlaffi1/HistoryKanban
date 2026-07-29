@@ -39,7 +39,6 @@ CREATE TABLE IF NOT EXISTS projets (
     description TEXT NOT NULL DEFAULT '',
     couleur TEXT NOT NULL DEFAULT '#737373',
     archive BOOLEAN NOT NULL DEFAULT false,
-    depot TEXT NOT NULL DEFAULT '',
     createur UUID NOT NULL REFERENCES utilisateurs(id),
     creation TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -79,7 +78,7 @@ CREATE TABLE IF NOT EXISTS taches (
     points INTEGER NOT NULL DEFAULT 0,
     urgence TEXT NOT NULL DEFAULT 'normale' CHECK (urgence IN ('faible','normale','elevee','urgente')),
     echeance TIMESTAMPTZ,
-    commit TEXT NOT NULL DEFAULT '',
+    urls TEXT[] NOT NULL DEFAULT '{}',
     position INTEGER NOT NULL DEFAULT 0,
     suppression TIMESTAMPTZ,
     createur UUID NOT NULL REFERENCES utilisateurs(id),
@@ -148,8 +147,7 @@ CREATE TABLE IF NOT EXISTS notifications (
     creation TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-ALTER TABLE taches ADD COLUMN IF NOT EXISTS commit TEXT NOT NULL DEFAULT '';
-ALTER TABLE projets ADD COLUMN IF NOT EXISTS depot TEXT NOT NULL DEFAULT '';
+ALTER TABLE taches ADD COLUMN IF NOT EXISTS urls TEXT[] NOT NULL DEFAULT '{}';
 ALTER TABLE taches ADD COLUMN IF NOT EXISTS urgence TEXT NOT NULL DEFAULT 'normale';
 ALTER TABLE images ADD COLUMN IF NOT EXISTS typecontenu TEXT NOT NULL DEFAULT 'image/png';
 ALTER TABLE taches ADD COLUMN IF NOT EXISTS suppression TIMESTAMPTZ;
@@ -163,6 +161,26 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'taches_urgence_valide') THEN
         ALTER TABLE taches ADD CONSTRAINT taches_urgence_valide
             CHECK (urgence IN ('faible','normale','elevee','urgente'));
+    END IF;
+END $$;
+
+-- Migration : l'ancien numero de commit devient une URL complete rattachee a la tache,
+-- construite depuis le depot du projet quand il etait renseigne, puis les colonnes
+-- commit (taches) et depot (projets) sont supprimees.
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'taches' AND column_name = 'commit') THEN
+        UPDATE taches t SET urls = ARRAY[rtrim(p.depot, '/') || '/commit/' || t.commit]
+        FROM projets p
+        WHERE p.id = t.projet AND t.commit <> '' AND p.depot <> '' AND t.urls = '{}';
+        UPDATE taches SET urls = ARRAY[taches.commit]
+        WHERE taches.commit <> '' AND urls = '{}';
+        ALTER TABLE taches DROP COLUMN "commit";
+    END IF;
+    IF EXISTS (SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'projets' AND column_name = 'depot') THEN
+        ALTER TABLE projets DROP COLUMN depot;
     END IF;
 END $$;
 

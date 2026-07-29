@@ -26,7 +26,7 @@ func main() {
 	}
 	defer reserve.Close()
 
-	verificateur, erreur := securite.NouveauVerificateur(config.URLJWKS(), config.Emetteur())
+	verificateur, erreur := securite.NouveauVerificateur(config.URLJWKS(), config.Emetteurs())
 	if erreur != nil {
 		log.Fatalf("keycloak : %v", erreur)
 	}

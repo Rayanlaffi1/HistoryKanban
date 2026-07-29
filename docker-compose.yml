@@ -2,7 +2,7 @@ name: historykanban
 
 services:
   traefik:
-    image: traefik:v3.1
+    image: traefik:v3.7
     volumes:
       - ./traefik/traefik.yml:/etc/traefik/traefik.yml
       - ./traefik/dynamique.yml:/etc/traefik/dynamique.yml
@@ -60,12 +60,13 @@ services:
       KC_HTTP_ENABLED: "true"
       KC_HOSTNAME_STRICT: "false"
       KC_PROXY_HEADERS: xforwarded
+      HKDOMAINERESEAU: historykanban.${IPRESEAU:-127.0.0.1}.sslip.io
     volumes:
-      - ./keycloak/realm:/opt/keycloak/data/import
+      - ./keycloak/realm:/opt/keycloak/realm-modeles
       - ./keycloak/themes/historykanban:/opt/keycloak/themes/historykanban
     labels:
       traefik.enable: "true"
-      traefik.http.routers.keycloak.rule: Host(`auth.historykanban.localhost`)
+      traefik.http.routers.keycloak.rule: Host(`auth.historykanban.localhost`) || HostRegexp(`^auth\.historykanban\.[0-9.-]+\.sslip\.io$$`)
       traefik.http.routers.keycloak.tls: "true"
       traefik.http.services.keycloak.loadbalancer.server.port: "8080"
     depends_on:
@@ -82,9 +83,9 @@ services:
       - minio:/data
     labels:
       traefik.enable: "true"
-      traefik.http.routers.minio.rule: Host(`images.historykanban.localhost`)
+      traefik.http.routers.minio.rule: Host(`images.historykanban.localhost`) || HostRegexp(`^images\.historykanban\.[0-9.-]+\.sslip\.io$$`)
       traefik.http.routers.minio.tls: "true"
-      traefik.http.routers.minioprincipal.rule: Host(`historykanban.localhost`) && PathPrefix(`/images`)
+      traefik.http.routers.minioprincipal.rule: (Host(`historykanban.localhost`) || HostRegexp(`^historykanban\.[0-9.-]+\.sslip\.io$$`)) && PathPrefix(`/images`)
       traefik.http.routers.minioprincipal.tls: "true"
       traefik.http.services.minio.loadbalancer.server.port: "9000"
     ports:
@@ -126,7 +127,7 @@ services:
     image: mailhog/mailhog:v1.0.1
     labels:
       traefik.enable: "true"
-      traefik.http.routers.courriel.rule: Host(`courriel.historykanban.localhost`)
+      traefik.http.routers.courriel.rule: Host(`courriel.historykanban.localhost`) || HostRegexp(`^courriel\.historykanban\.[0-9.-]+\.sslip\.io$$`)
       traefik.http.routers.courriel.tls: "true"
       traefik.http.services.courriel.loadbalancer.server.port: "8025"
 
@@ -136,10 +137,10 @@ services:
       PORTSERVEUR: "8080"
       BDURL: postgres://${BDUTILISATEUR}:${BDMDP}@basededonnees:5432/${BDNOM}?sslmode=disable
       KEYCLOAKURL: http://keycloak:8080
-      KEYCLOAKURLPUBLIQUE: https://auth.historykanban.localhost
+      KEYCLOAKURLPUBLIQUE: https://auth.historykanban.localhost,https://auth.historykanban.${IPRESEAU:-127.0.0.1}.sslip.io
       KEYCLOAKREALM: historykanban
       MINIOHOTE: minio:9000
-      MINIOURLPUBLIQUE: https://historykanban.localhost
+      MINIOURLPUBLIQUE: /
       MINIOCLE: ${MINIOCLE}
       MINIOSECRET: ${MINIOSECRET}
       MINIOSEAU: images
@@ -147,12 +148,18 @@ services:
       SMTPHOTE: courriel
       SMTPPORT: "1025"
       SMTPEXPEDITEUR: notifications@historykanban.fr
-      ORIGINES: https://historykanban.localhost,http://localhost:5173
+      ORIGINES: https://historykanban.localhost,http://localhost:5173,https://historykanban.${IPRESEAU:-127.0.0.1}.sslip.io
+      JENKINSURL: ${JENKINSURL:-http://jenkins:8080}
+      JENKINSJOB: ${JENKINSJOB:-historykanban}
+      JENKINSUTILISATEUR: ${JENKINSUTILISATEUR:-}
+      JENKINSJETON: ${JENKINSJETON:-}
+      GITHUBDEPOT: ${GITHUBDEPOT:-}
+      VERSIONAPPLICATION: ${VERSIONAPPLICATION:-dev}
     labels:
       traefik.enable: "true"
-      traefik.http.routers.serveur.rule: Host(`api.historykanban.localhost`)
+      traefik.http.routers.serveur.rule: Host(`api.historykanban.localhost`) || HostRegexp(`^api\.historykanban\.[0-9.-]+\.sslip\.io$$`)
       traefik.http.routers.serveur.tls: "true"
-      traefik.http.routers.serveurchemin.rule: Host(`historykanban.localhost`) && (PathPrefix(`/api`) || PathPrefix(`/ws`) || PathPrefix(`/sante`))
+      traefik.http.routers.serveurchemin.rule: (Host(`historykanban.localhost`) || HostRegexp(`^historykanban\.[0-9.-]+\.sslip\.io$$`)) && (PathPrefix(`/api`) || PathPrefix(`/ws`) || PathPrefix(`/sante`))
       traefik.http.routers.serveurchemin.tls: "true"
       traefik.http.services.serveur.loadbalancer.server.port: "8080"
     ports:
@@ -178,14 +185,11 @@ services:
     build:
       context: ./interface
       args:
-        VITE_URLAPI: https://historykanban.localhost
-        VITE_URLWS: wss://historykanban.localhost
-        VITE_KEYCLOAKURL: https://auth.historykanban.localhost
         VITE_KEYCLOAKREALM: historykanban
         VITE_KEYCLOAKCLIENT: interface
     labels:
       traefik.enable: "true"
-      traefik.http.routers.interface.rule: Host(`historykanban.localhost`)
+      traefik.http.routers.interface.rule: Host(`historykanban.localhost`) || HostRegexp(`^historykanban\.[0-9.-]+\.sslip\.io$$`)
       traefik.http.routers.interface.tls: "true"
       traefik.http.services.interface.loadbalancer.server.port: "80"
     depends_on:

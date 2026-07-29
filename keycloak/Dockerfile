@@ -4,3 +4,7 @@ ADD --chown=keycloak:keycloak https://repo1.maven.org/maven2/io/phasetwo/keycloa
 ADD --chown=keycloak:keycloak https://repo1.maven.org/maven2/io/phasetwo/keycloak/keycloak-events/0.62/keycloak-events-0.62.jar /opt/keycloak/providers/keycloak-events.jar
 
 RUN /opt/keycloak/bin/kc.sh build
+
+COPY --chmod=0755 demarrer.sh /opt/keycloak/bin/demarrer.sh
+
+ENTRYPOINT ["/opt/keycloak/bin/demarrer.sh"]

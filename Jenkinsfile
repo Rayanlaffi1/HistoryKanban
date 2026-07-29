@@ -39,7 +39,10 @@ pipeline {
 
     stage("Deploiement") {
       when {
-        branch "main"
+        anyOf {
+          branch "main"
+          expression { env.BRANCH_NAME == null }
+        }
       }
       steps {
         sh "docker compose up -d --build"
