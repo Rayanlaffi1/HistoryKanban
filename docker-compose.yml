@@ -197,6 +197,8 @@ services:
 
   jenkins:
     image: jenkins/jenkins:lts-jdk17
+    environment:
+      JAVA_OPTS: -Djetty.httpConfig.requestHeaderSize=32768
     volumes:
       - jenkins:/var/jenkins_home
       - /var/run/docker.sock:/var/run/docker.sock
