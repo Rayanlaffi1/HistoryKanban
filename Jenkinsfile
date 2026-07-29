@@ -44,7 +44,7 @@ pipeline {
         }
       }
       steps {
-        sh "docker compose up -d --build"
+        sh "docker compose --env-file /var/jenkins_home/historykanban.env up -d --build --no-deps serveur interface"
       }
     }
   }
