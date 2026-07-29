@@ -89,6 +89,41 @@ func cheminJob(job string) string {
 	return "/job/" + strings.Join(segments, "/job/")
 }
 
+func (s *Serveur) ajouterAuthentificationJenkins(requete *http.Request) {
+	requete.SetBasicAuth(s.Config.JenkinsUtilisateur, s.Config.JenkinsJeton)
+}
+
+func (s *Serveur) ajouterCrumbJenkins(contexte context.Context, requete *http.Request) {
+	adresseCrumb := strings.TrimSuffix(s.Config.JenkinsURL, "/") + "/crumbIssuer/api/json"
+	requeteCrumb, erreur := http.NewRequestWithContext(contexte, http.MethodGet, adresseCrumb, nil)
+	if erreur != nil {
+		log.Printf("preparation du crumb Jenkins impossible : %v", erreur)
+		return
+	}
+	s.ajouterAuthentificationJenkins(requeteCrumb)
+	reponse, erreur := clientMiseAJour.Do(requeteCrumb)
+	if erreur != nil {
+		log.Printf("lecture du crumb Jenkins impossible : %v", erreur)
+		return
+	}
+	defer reponse.Body.Close()
+	if reponse.StatusCode != http.StatusOK {
+		log.Printf("crumb Jenkins indisponible (code %d)", reponse.StatusCode)
+		return
+	}
+	var corps struct {
+		Champ string `json:"crumbRequestField"`
+		Crumb string `json:"crumb"`
+	}
+	if erreur := json.NewDecoder(io.LimitReader(reponse.Body, 1<<20)).Decode(&corps); erreur != nil {
+		log.Printf("lecture de la reponse crumb Jenkins impossible : %v", erreur)
+		return
+	}
+	if corps.Champ != "" && corps.Crumb != "" {
+		requete.Header.Set(corps.Champ, corps.Crumb)
+	}
+}
+
 func (s *Serveur) declencherMiseAJour(c *gin.Context) {
 	if !s.jenkinsConfigure() {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"erreur": "declenchement Jenkins non configure sur le serveur"})
@@ -100,7 +135,8 @@ func (s *Serveur) declencherMiseAJour(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"erreur": "preparation de l'appel Jenkins impossible"})
 		return
 	}
-	requete.SetBasicAuth(s.Config.JenkinsUtilisateur, s.Config.JenkinsJeton)
+	s.ajouterAuthentificationJenkins(requete)
+	s.ajouterCrumbJenkins(c.Request.Context(), requete)
 	reponse, erreur := clientMiseAJour.Do(requete)
 	if erreur != nil {
 		log.Printf("appel Jenkins impossible : %v", erreur)

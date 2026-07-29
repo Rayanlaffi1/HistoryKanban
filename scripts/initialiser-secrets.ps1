@@ -61,6 +61,8 @@ try {
         throw "OpenSSL a echoue avec le code $LASTEXITCODE."
     }
 
+    $motDePasseJenkinsAdmin = New-SecretHexadecimal 24
+
     $lignesEnv = @(
         "BDMDP=$(New-SecretHexadecimal 24)"
         'BDNOM=historykanban'
@@ -75,7 +77,12 @@ try {
         'SAUVEGARDEINTERVALLE=86400'
         'SAUVEGARDERETENTION=14'
         'JENKINSADMIN=admin'
-        "JENKINSADMINMDP=$(New-SecretHexadecimal 24)"
+        "JENKINSADMINMDP=$motDePasseJenkinsAdmin"
+        'JENKINSUTILISATEUR=admin'
+        "JENKINSJETON=$motDePasseJenkinsAdmin"
+        'JENKINSGITURL=https://github.com/Rayanlaffi1/HistoryKanban.git'
+        'JENKINSBRANCHE=main'
+        'GITHUBDEPOT=Rayanlaffi1/HistoryKanban'
     )
 
     [System.IO.File]::WriteAllLines(

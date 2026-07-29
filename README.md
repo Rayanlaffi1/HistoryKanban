@@ -192,22 +192,29 @@ Fonctionnement :
 
 1. Le serveur interroge l'API GitHub (`GITHUBDEPOT`, forme `proprietaire/depot`) pour recuperer le tag de la derniere release et le compare a `VERSIONAPPLICATION`. Si le tag differe, l'interface signale « Une nouvelle release est disponible » : c'est la condition de mise a jour.
 2. `GET /api/systeme/maj` renvoie versions et disponibilite ; `POST /api/systeme/maj` declenche le job Jenkins. Les deux exigent le role `administrateur` et le serveur n'execute aucune commande : il appelle uniquement l'API Jenkins.
-3. Le declenchement utilise `POST {JENKINSURL}/job/{JENKINSJOB}/build` authentifie par jeton API Jenkins (utilisateur + jeton, exempt de crumb CSRF). Le job execute le `Jenkinsfile` du depot : verification, construction des images serveur et interface, puis deploiement.
+3. Le declenchement utilise `POST {JENKINSURL}/job/{JENKINSJOB}/build` authentifie par le compte Jenkins configure. Le serveur recupere le crumb CSRF Jenkins avant le declenchement quand il est requis. Le job execute le `Jenkinsfile` du depot : verification, construction des images serveur et interface, puis deploiement.
 
-Variables a renseigner dans `.env` (voir `.env.example`, ne jamais commiter le jeton) :
+Au premier demarrage, Jenkins est initialise automatiquement :
+
+- le wizard d'installation est desactive ;
+- le premier administrateur `JENKINSADMIN` est cree avec `JENKINSADMINMDP` ;
+- le job `JENKINSJOB` est cree et pointe vers `JENKINSGITURL` sur `JENKINSBRANCHE` ;
+- le serveur utilise par defaut `JENKINSUTILISATEUR=admin` et `JENKINSJETON=<mot de passe admin Jenkins>` pour declencher ce job.
+
+Variables a renseigner dans `.env` (voir `.env.example`, ne jamais commiter les secrets) :
 
 | Variable | Role |
 | --- | --- |
 | `JENKINSURL` | URL de Jenkins vue par le serveur (defaut `http://jenkins:8080`) |
-| `JENKINSJOB` | Nom du job (dossiers acceptes, ex. `historykanban/main`) |
+| `JENKINSJOB` | Nom du job cree et declenche (defaut `historykanban`) |
 | `JENKINSADMIN` | Premier utilisateur administrateur Jenkins cree au demarrage |
 | `JENKINSADMINMDP` | Mot de passe du premier administrateur Jenkins, genere par le script d'initialisation |
-| `JENKINSUTILISATEUR` | Utilisateur Jenkins proprietaire du jeton API |
-| `JENKINSJETON` | Jeton API Jenkins (profil utilisateur > Security > API Token) |
+| `JENKINSUTILISATEUR` | Utilisateur Jenkins utilise par le serveur pour declencher le job |
+| `JENKINSJETON` | Mot de passe ou jeton Jenkins utilise par le serveur |
+| `JENKINSGITURL` | Depot Git du pipeline Jenkins |
+| `JENKINSBRANCHE` | Branche suivie par le job Jenkins, par defaut `main` |
 | `GITHUBDEPOT` | Depot GitHub `proprietaire/depot` pour detecter les releases |
 | `VERSIONAPPLICATION` | Version deployee, a aligner sur le tag de la release installee |
-
-Tant que `JENKINSUTILISATEUR` et `JENKINSJETON` sont vides, le bouton reste desactive et l'endpoint repond 503 : rien n'est declenchable par defaut.
 
 ## Depannage
 

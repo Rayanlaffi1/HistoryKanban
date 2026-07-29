@@ -151,9 +151,9 @@ services:
       ORIGINES: https://historykanban.localhost,http://localhost:5173,https://historykanban.${IPRESEAU:-127.0.0.1}.sslip.io
       JENKINSURL: ${JENKINSURL:-http://jenkins:8080}
       JENKINSJOB: ${JENKINSJOB:-historykanban}
-      JENKINSUTILISATEUR: ${JENKINSUTILISATEUR:-}
-      JENKINSJETON: ${JENKINSJETON:-}
-      GITHUBDEPOT: ${GITHUBDEPOT:-}
+      JENKINSUTILISATEUR: ${JENKINSUTILISATEUR:-admin}
+      JENKINSJETON: ${JENKINSJETON:-${JENKINSADMINMDP:-}}
+      GITHUBDEPOT: ${GITHUBDEPOT:-Rayanlaffi1/HistoryKanban}
       VERSIONAPPLICATION: ${VERSIONAPPLICATION:-dev}
     labels:
       traefik.enable: "true"
@@ -196,11 +196,15 @@ services:
       - serveur
 
   jenkins:
-    image: jenkins/jenkins:lts-jdk17
+    build: ./jenkins
+    user: root
     environment:
       JAVA_OPTS: -Djenkins.install.runSetupWizard=false -Djetty.httpConfig.requestHeaderSize=32768
       JENKINSADMIN: ${JENKINSADMIN:-admin}
       JENKINSADMINMDP: ${JENKINSADMINMDP:-}
+      JENKINSJOB: ${JENKINSJOB:-historykanban}
+      JENKINSGITURL: ${JENKINSGITURL:-https://github.com/Rayanlaffi1/HistoryKanban.git}
+      JENKINSBRANCHE: ${JENKINSBRANCHE:-main}
     volumes:
       - jenkins:/var/jenkins_home
       - ./jenkins/init.groovy.d:/var/jenkins_home/init.groovy.d:ro

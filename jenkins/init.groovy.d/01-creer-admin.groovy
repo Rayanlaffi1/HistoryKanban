@@ -20,11 +20,14 @@ if (instance.getSecurityRealm() instanceof HudsonPrivateSecurityRealm) {
   instance.setSecurityRealm(realm)
 }
 
-if (realm.getUser(utilisateurAdmin) == null) {
-  realm.createAccount(utilisateurAdmin, motDePasseAdmin)
+def utilisateur = realm.getUser(utilisateurAdmin)
+if (utilisateur == null) {
+  utilisateur = realm.createAccount(utilisateurAdmin, motDePasseAdmin)
   println "Administrateur Jenkins cree : ${utilisateurAdmin}"
 } else {
-  println "Administrateur Jenkins deja present : ${utilisateurAdmin}"
+  utilisateur.addProperty(HudsonPrivateSecurityRealm.Details.fromPlainPassword(motDePasseAdmin))
+  utilisateur.save()
+  println "Mot de passe de l administrateur Jenkins synchronise : ${utilisateurAdmin}"
 }
 
 FullControlOnceLoggedInAuthorizationStrategy strategie = new FullControlOnceLoggedInAuthorizationStrategy()

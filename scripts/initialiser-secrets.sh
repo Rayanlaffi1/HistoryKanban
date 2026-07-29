@@ -45,6 +45,7 @@ esac
 trap 'rm -rf -- "$dossier_temporaire"' EXIT HUP INT TERM
 
 umask 077
+jenkins_admin_mdp=$(openssl rand -hex 24)
 cat >"$dossier_temporaire/.env" <<EOF
 BDMDP=$(openssl rand -hex 24)
 BDNOM=historykanban
@@ -59,7 +60,12 @@ RABBITMDP=$(openssl rand -hex 24)
 SAUVEGARDEINTERVALLE=86400
 SAUVEGARDERETENTION=14
 JENKINSADMIN=admin
-JENKINSADMINMDP=$(openssl rand -hex 24)
+JENKINSADMINMDP=$jenkins_admin_mdp
+JENKINSUTILISATEUR=admin
+JENKINSJETON=$jenkins_admin_mdp
+JENKINSGITURL=https://github.com/Rayanlaffi1/HistoryKanban.git
+JENKINSBRANCHE=main
+GITHUBDEPOT=Rayanlaffi1/HistoryKanban
 EOF
 
 openssl req -x509 -newkey rsa:4096 -sha256 -days 825 -nodes \
