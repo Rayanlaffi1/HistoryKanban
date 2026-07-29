@@ -37,6 +37,22 @@ func (d *Distributeur) Demarrer(bus *evenements.Bus) error {
 	return bus.Consommer("courriels", "tache.#", d.courriels)
 }
 
+func destinatairesNotification(evenement evenements.Evenement) []string {
+	vus := map[string]bool{}
+	destinataires := []string{}
+	for _, destinataire := range evenement.Destinataires {
+		if destinataire == "" || vus[destinataire] {
+			continue
+		}
+		if destinataire == evenement.Acteur && !evenement.Agent {
+			continue
+		}
+		vus[destinataire] = true
+		destinataires = append(destinataires, destinataire)
+	}
+	return destinataires
+}
+
 func (d *Distributeur) tempsreel(evenement evenements.Evenement) {
 	contexte, annuler := context.WithTimeout(context.Background(), 10*time.Second)
 	defer annuler()
@@ -51,10 +67,7 @@ func (d *Distributeur) tempsreel(evenement evenements.Evenement) {
 		})
 	}
 	d.journaliser(contexte, evenement)
-	for _, destinataire := range evenement.Destinataires {
-		if destinataire == evenement.Acteur {
-			continue
-		}
+	for _, destinataire := range destinatairesNotification(evenement) {
 		notification, erreur := d.Depot.CreerNotification(contexte, destinataire, evenement.Type, map[string]any{
 			"titre":     evenement.Titre,
 			"projet":    evenement.Projet,
@@ -107,12 +120,7 @@ func (d *Distributeur) journaliser(contexte context.Context, evenement evenement
 }
 
 func (d *Distributeur) courriels(evenement evenements.Evenement) {
-	destinataires := []string{}
-	for _, destinataire := range evenement.Destinataires {
-		if destinataire != evenement.Acteur {
-			destinataires = append(destinataires, destinataire)
-		}
-	}
+	destinataires := destinatairesNotification(evenement)
 	if len(destinataires) == 0 {
 		return
 	}

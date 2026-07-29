@@ -201,6 +201,10 @@ CREATE TABLE IF NOT EXISTS cles (
     PRIMARY KEY (projet, utilisateur)
 );
 
+UPDATE cles
+SET cle = encode(sha256(cle::bytea), 'hex')
+WHERE cle !~ '^[a-f0-9]{64}$';
+
 CREATE TABLE IF NOT EXISTS preferences (
     utilisateur UUID PRIMARY KEY REFERENCES utilisateurs(id) ON DELETE CASCADE,
     courriels BOOLEAN NOT NULL DEFAULT true,
