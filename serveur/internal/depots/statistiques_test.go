@@ -1,0 +1,135 @@
+package depots
+
+import (
+	"context"
+	"os"
+	"testing"
+	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+)
+
+func depotTest(t *testing.T) (*Depot, context.Context, func()) {
+	t.Helper()
+	adresse := os.Getenv("HK_TEST_BDURL")
+	if adresse == "" {
+		t.Skip("HK_TEST_BDURL non defini")
+	}
+	ctx := context.Background()
+	pool, err := pgxpool.New(ctx, adresse)
+	if err != nil {
+		t.Fatalf("connexion base de test: %v", err)
+	}
+	return Nouveau(pool), ctx, pool.Close
+}
+
+func preparerProjetStatistiques(t *testing.T, depot *Depot, ctx context.Context) (groupe string, projet string, todo string, fini string, utilisateur string) {
+	t.Helper()
+	suffixe := time.Now().UnixNano()
+	utilisateur = "00000000-0000-4000-8000-000000000001"
+	groupe = "00000000-0000-4000-8000-000000000002"
+	projet = "00000000-0000-4000-8000-000000000003"
+	todo = "00000000-0000-4000-8000-000000000004"
+	fini = "00000000-0000-4000-8000-000000000005"
+
+	_, err := depot.bd.Exec(ctx, `DELETE FROM groupes WHERE id = $1`, groupe)
+	if err != nil {
+		t.Fatalf("nettoyage groupe: %v", err)
+	}
+	_, err = depot.bd.Exec(ctx, `DELETE FROM utilisateurs WHERE id = $1`, utilisateur)
+	if err != nil {
+		t.Fatalf("nettoyage utilisateur: %v", err)
+	}
+	_, err = depot.bd.Exec(ctx, `
+		INSERT INTO utilisateurs (id, courriel, nom, prenom)
+		VALUES ($1, $2, 'Test', 'Stats')`, utilisateur, "stats-test+"+time.Unix(0, suffixe).Format("150405.000000000")+"@historykanban.local")
+	if err != nil {
+		t.Fatalf("creation utilisateur: %v", err)
+	}
+	_, err = depot.bd.Exec(ctx, `
+		INSERT INTO groupes (id, nom, proprietaire) VALUES ($1, 'Groupe stats', $2)`, groupe, utilisateur)
+	if err != nil {
+		t.Fatalf("creation groupe: %v", err)
+	}
+	_, err = depot.bd.Exec(ctx, `
+		INSERT INTO membres (groupe, utilisateur, role) VALUES ($1, $2, 'proprietaire')`, groupe, utilisateur)
+	if err != nil {
+		t.Fatalf("creation membre: %v", err)
+	}
+	_, err = depot.bd.Exec(ctx, `
+		INSERT INTO projets (id, groupe, nom, createur) VALUES ($1, $2, 'Projet stats', $3)`, projet, groupe, utilisateur)
+	if err != nil {
+		t.Fatalf("creation projet: %v", err)
+	}
+	_, err = depot.bd.Exec(ctx, `
+		INSERT INTO colonnes (id, projet, nom, position) VALUES
+		($1, $3, 'A faire', 0),
+		($2, $3, 'Termine', 1)`, todo, fini, projet)
+	if err != nil {
+		t.Fatalf("creation colonnes: %v", err)
+	}
+	t.Cleanup(func() {
+		_, _ = depot.bd.Exec(ctx, `DELETE FROM groupes WHERE id = $1`, groupe)
+		_, _ = depot.bd.Exec(ctx, `DELETE FROM utilisateurs WHERE id = $1`, utilisateur)
+	})
+	return groupe, projet, todo, fini, utilisateur
+}
+
+func TestStatistiquesUtilisentLaDateDeFinEtPasLaDerniereModification(t *testing.T) {
+	depot, ctx, fermer := depotTest(t)
+	defer fermer()
+	_, projet, _, fini, utilisateur := preparerProjetStatistiques(t, depot, ctx)
+
+	terminee := time.Now().AddDate(0, 0, -5).Truncate(time.Second)
+	modifieeApresFin := time.Now().Truncate(time.Second)
+	_, err := depot.bd.Exec(ctx, `
+		INSERT INTO taches (projet, colonne, titre, points, createur, terminee, modification)
+		VALUES ($1, $2, 'Tache terminee puis modifiee', 8, $3, $4, $5)`, projet, fini, utilisateur, terminee, modifieeApresFin)
+	if err != nil {
+		t.Fatalf("creation tache terminee: %v", err)
+	}
+
+	stats, err := depot.Statistiques(ctx, []string{projet}, terminee.Add(-24*time.Hour), terminee.Add(24*time.Hour), "day")
+	if err != nil {
+		t.Fatalf("statistiques: %v", err)
+	}
+	if stats.Totaux.Terminees != 1 || stats.Totaux.Points != 8 {
+		t.Fatalf("statistiques terminees = %d/%d, attendu 1/8", stats.Totaux.Terminees, stats.Totaux.Points)
+	}
+}
+
+func TestDeplacerTacheRenseigneLaDateDeFinSeulementEnDerniereColonne(t *testing.T) {
+	depot, ctx, fermer := depotTest(t)
+	defer fermer()
+	_, projet, todo, fini, utilisateur := preparerProjetStatistiques(t, depot, ctx)
+
+	var tache string
+	err := depot.bd.QueryRow(ctx, `
+		INSERT INTO taches (projet, colonne, titre, points, createur)
+		VALUES ($1, $2, 'Tache a terminer', 3, $3)
+		RETURNING id`, projet, todo, utilisateur).Scan(&tache)
+	if err != nil {
+		t.Fatalf("creation tache: %v", err)
+	}
+
+	if err := depot.DeplacerTache(ctx, tache, fini, 0); err != nil {
+		t.Fatalf("deplacement vers termine: %v", err)
+	}
+	var terminee *time.Time
+	if err := depot.bd.QueryRow(ctx, `SELECT terminee FROM taches WHERE id = $1`, tache).Scan(&terminee); err != nil {
+		t.Fatalf("lecture date de fin: %v", err)
+	}
+	if terminee == nil {
+		t.Fatal("date de fin absente apres deplacement en derniere colonne")
+	}
+
+	if err := depot.DeplacerTache(ctx, tache, todo, 0); err != nil {
+		t.Fatalf("deplacement hors termine: %v", err)
+	}
+	if err := depot.bd.QueryRow(ctx, `SELECT terminee FROM taches WHERE id = $1`, tache).Scan(&terminee); err != nil {
+		t.Fatalf("lecture date de fin apres sortie: %v", err)
+	}
+	if terminee != nil {
+		t.Fatal("date de fin conservee apres sortie de la derniere colonne")
+	}
+}

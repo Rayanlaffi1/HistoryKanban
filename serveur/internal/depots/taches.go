@@ -151,9 +151,14 @@ func (d *Depot) Tache(ctx context.Context, id string) (*modeles.Tache, error) {
 
 func (d *Depot) CreerTache(ctx context.Context, tache modeles.Tache) (*modeles.Tache, error) {
 	erreur := d.bd.QueryRow(ctx, `
-		INSERT INTO taches (projet, colonne, lot, titre, description, points, urgence, echeance, createur, position)
+		INSERT INTO taches (projet, colonne, lot, titre, description, points, urgence, echeance, createur, position, terminee)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9,
-			(SELECT coalesce(max(position), -1) + 1 FROM taches WHERE colonne = $2))
+			(SELECT coalesce(max(position), -1) + 1 FROM taches WHERE colonne = $2),
+			CASE WHEN EXISTS (
+				SELECT 1 FROM colonnes c
+				WHERE c.id = $2
+					AND c.position = (SELECT max(cc.position) FROM colonnes cc WHERE cc.projet = c.projet)
+			) THEN now() ELSE NULL END)
 		RETURNING id, position, creation, modification`,
 		tache.Projet, tache.Colonne, tache.Lot, tache.Titre, tache.Description,
 		tache.Points, tache.Urgence, tache.Echeance, tache.Createur).
@@ -272,8 +277,15 @@ func (d *Depot) DeplacerTache(ctx context.Context, id, colonne string, position 
 		colonne, position); erreur != nil {
 		return erreur
 	}
-	if _, erreur = transaction.Exec(ctx,
-		`UPDATE taches SET colonne = $2, position = $3, modification = now() WHERE id = $1`,
+	if _, erreur = transaction.Exec(ctx, `
+		UPDATE taches t SET colonne = $2, position = $3, modification = now(),
+			terminee = CASE
+				WHEN c.position = (SELECT max(cc.position) FROM colonnes cc WHERE cc.projet = c.projet)
+					THEN coalesce(t.terminee, now())
+				ELSE NULL
+			END
+		FROM colonnes c
+		WHERE t.id = $1 AND c.id = $2`,
 		id, colonne, position); erreur != nil {
 		return erreur
 	}

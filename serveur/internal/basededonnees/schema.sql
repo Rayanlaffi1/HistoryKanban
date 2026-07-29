@@ -81,6 +81,7 @@ CREATE TABLE IF NOT EXISTS taches (
     urls TEXT[] NOT NULL DEFAULT '{}',
     position INTEGER NOT NULL DEFAULT 0,
     suppression TIMESTAMPTZ,
+    terminee TIMESTAMPTZ,
     createur UUID NOT NULL REFERENCES utilisateurs(id),
     creation TIMESTAMPTZ NOT NULL DEFAULT now(),
     modification TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -151,10 +152,18 @@ ALTER TABLE taches ADD COLUMN IF NOT EXISTS urls TEXT[] NOT NULL DEFAULT '{}';
 ALTER TABLE taches ADD COLUMN IF NOT EXISTS urgence TEXT NOT NULL DEFAULT 'normale';
 ALTER TABLE images ADD COLUMN IF NOT EXISTS typecontenu TEXT NOT NULL DEFAULT 'image/png';
 ALTER TABLE taches ADD COLUMN IF NOT EXISTS suppression TIMESTAMPTZ;
+ALTER TABLE taches ADD COLUMN IF NOT EXISTS terminee TIMESTAMPTZ;
 ALTER TABLE activites ADD COLUMN IF NOT EXISTS agent BOOLEAN NOT NULL DEFAULT false;
 ALTER TABLE commentaires ADD COLUMN IF NOT EXISTS agent BOOLEAN NOT NULL DEFAULT false;
 
+UPDATE taches t SET terminee = t.modification
+FROM colonnes c
+WHERE c.id = t.colonne
+  AND t.terminee IS NULL
+  AND c.position = (SELECT max(cc.position) FROM colonnes cc WHERE cc.projet = t.projet);
+
 CREATE INDEX IF NOT EXISTS taches_suppression ON taches(suppression);
+CREATE INDEX IF NOT EXISTS taches_terminee ON taches(terminee);
 
 DO $$
 BEGIN

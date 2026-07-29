@@ -10,11 +10,11 @@ import (
 
 const cteTerminees = `
 	WITH terminees AS (
-		SELECT t.id, t.points, t.modification, t.createur
+		SELECT t.id, t.points, t.terminee, t.createur
 		FROM taches t
 		JOIN colonnes c ON c.id = t.colonne
 		WHERE t.projet = ANY($1) AND t.suppression IS NULL
-			AND t.modification BETWEEN $2 AND $3
+			AND t.terminee BETWEEN $2 AND $3
 			AND c.position = (SELECT max(cc.position) FROM colonnes cc WHERE cc.projet = t.projet)
 	)`
 
@@ -147,7 +147,7 @@ func (d *Depot) Statistiques(ctx context.Context, projets []string, debut, fin t
 	})
 
 	lignes, erreur = d.bd.Query(ctx, cteTerminees+`
-		SELECT date_trunc($4, modification) AS periode, coalesce(sum(points), 0), count(*)
+		SELECT date_trunc($4, terminee) AS periode, coalesce(sum(points), 0), count(*)
 		FROM terminees
 		GROUP BY periode
 		ORDER BY periode`,
