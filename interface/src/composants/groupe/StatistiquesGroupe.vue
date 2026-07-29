@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from "vue"
 import dayjs from "dayjs"
+import { watchDebounced } from "@vueuse/core"
 import { utiliserProjets, utiliserStatistiques } from "@/api/requetes"
 import type { ParametresStatistiques } from "@/api/types"
 import { abonnerProjet, desabonnerProjet } from "@/tempsreel/prise"
@@ -56,7 +57,18 @@ watch(periode, (valeur) => {
   }
 })
 
-const { data: statistiques, isLoading: chargement } = utiliserStatistiques(identifiant, parametres)
+// Paramètres réellement appliqués à la requête : différés pour éviter de relancer
+// les statistiques à chaque frappe dans les champs de dates personnalisées.
+const parametresAppliques = ref<ParametresStatistiques>({ ...parametres.value })
+watchDebounced(
+  parametres,
+  (valeur) => {
+    parametresAppliques.value = { ...valeur }
+  },
+  { debounce: 250, deep: true },
+)
+
+const { data: statistiques, isLoading: chargement } = utiliserStatistiques(identifiant, parametresAppliques)
 
 const maximumPoints = computed(() =>
   Math.max(1, ...(statistiques.value?.classement ?? []).map((ligne) => ligne.points)),
@@ -64,11 +76,31 @@ const maximumPoints = computed(() =>
 const maximumSerie = computed(() =>
   Math.max(1, ...(statistiques.value?.serie ?? []).map((point) => point.points)),
 )
+const maximumTaches = computed(() =>
+  Math.max(1, ...(statistiques.value?.serie ?? []).map((point) => point.taches)),
+)
+
+// Hauteur de barre : les points priment, mais une période sans point pourtant
+// riche en tâches terminées reste visible via une barre « fantôme » (échelle
+// secondaire plafonnée pour ne pas rivaliser avec les vraies barres de points).
+function hauteurBarre(point: { points: number; taches: number }): number {
+  if (point.points > 0) return Math.max(8, Math.round((point.points / maximumSerie.value) * 100))
+  if (point.taches > 0) return Math.max(12, Math.round((point.taches / maximumTaches.value) * 45))
+  return 0
+}
+function barreSansPoints(point: { points: number; taches: number }): boolean {
+  return point.points === 0 && point.taches > 0
+}
+const presenceBarresSansPoints = computed(() =>
+  (statistiques.value?.serie ?? []).some((point) => point.points === 0 && point.taches > 0),
+)
 
 function libellePeriode(valeur: string): string {
   const moment = dayjs(valeur)
-  if (parametres.value.granularite === "mois") return moment.format("MMM YYYY")
-  if (parametres.value.granularite === "semaine") return "sem. " + moment.format("DD MMM")
+  // On lit la granularité appliquée (différée) pour rester cohérent avec les
+  // données actuellement affichées, pas celle en cours de saisie.
+  if (parametresAppliques.value.granularite === "mois") return moment.format("MMM YYYY")
+  if (parametresAppliques.value.granularite === "semaine") return "sem. " + moment.format("DD MMM")
   return moment.format("DD MMM")
 }
 
@@ -76,14 +108,26 @@ function libelleDateTerminee(valeur: string): string {
   return dayjs(valeur).format("DD/MM/YYYY HH:mm")
 }
 
-const tuiles = computed(() => [
+// Métriques bornées à la période sélectionnée.
+const tuilesPeriode = computed(() => [
   { libelle: "Points réalisés", valeur: statistiques.value?.totaux.points ?? 0 },
   { libelle: "Tâches terminées", valeur: statistiques.value?.totaux.terminees ?? 0 },
-  { libelle: "Tâches en retard", valeur: statistiques.value?.totaux.enretard ?? 0 },
+])
+
+// Métriques d'état courant (indépendantes de la période) : séparées visuellement
+// pour ne pas laisser croire qu'elles sont bornées à la période sélectionnée.
+const tuilesActuelles = computed(() => [
+  {
+    libelle: "Actuellement en retard",
+    valeur: statistiques.value?.totaux.enretard ?? 0,
+    complement: "",
+    alerte: (statistiques.value?.totaux.enretard ?? 0) > 0,
+  },
   {
     libelle: "Total du périmètre",
     valeur: statistiques.value?.totaux.total ?? 0,
     complement: `${statistiques.value?.totaux.totalpoints ?? 0} pts`,
+    alerte: false,
   },
 ])
 
@@ -136,36 +180,70 @@ const classeChampDate =
       </div>
     </section>
 
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <div
-        v-for="tuile in tuiles"
-        :key="tuile.libelle"
-        class="rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900"
-      >
-        <p class="text-sm text-neutral-500">{{ tuile.libelle }}</p>
-        <p class="mt-1 text-2xl font-bold">
-          {{ tuile.valeur }}
-          <span v-if="tuile.complement" class="text-sm font-normal text-neutral-400">· {{ tuile.complement }}</span>
-        </p>
+    <div class="grid gap-6 lg:grid-cols-2">
+      <div class="space-y-3">
+        <p class="text-xs font-semibold uppercase tracking-wide text-neutral-400">Sur la période sélectionnée</p>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div
+            v-for="tuile in tuilesPeriode"
+            :key="tuile.libelle"
+            class="rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900"
+          >
+            <p class="text-sm text-neutral-500">{{ tuile.libelle }}</p>
+            <p class="mt-1 text-2xl font-bold">{{ tuile.valeur }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="space-y-3">
+        <p class="text-xs font-semibold uppercase tracking-wide text-neutral-400">État actuel du périmètre</p>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div
+            v-for="tuile in tuilesActuelles"
+            :key="tuile.libelle"
+            class="rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900"
+          >
+            <p class="text-sm text-neutral-500">{{ tuile.libelle }}</p>
+            <p class="mt-1 text-2xl font-bold" :class="tuile.alerte ? 'text-amber-600 dark:text-amber-400' : ''">
+              {{ tuile.valeur }}
+              <span v-if="tuile.complement" class="text-sm font-normal text-neutral-400">· {{ tuile.complement }}</span>
+            </p>
+          </div>
+        </div>
       </div>
     </div>
 
     <section class="rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900">
       <h3 class="font-semibold">Points réalisés dans le temps</h3>
       <p class="mt-0.5 text-xs text-neutral-500">Tâches arrivées dans la dernière colonne de leur tableau.</p>
+      <p v-if="presenceBarresSansPoints" class="mt-1.5 flex items-center gap-1.5 text-[11px] text-neutral-400">
+        <span
+          class="inline-block h-2.5 w-2.5 rounded-sm border border-dashed border-neutral-400 bg-neutral-200 dark:border-neutral-600 dark:bg-neutral-700"
+        ></span>
+        Barres en pointillés : tâches terminées sans points estimés.
+      </p>
       <p v-if="chargement" class="py-10 text-center text-sm text-neutral-500">Chargement…</p>
       <div v-else-if="statistiques?.serie.length" class="mt-5 flex h-44 items-end gap-1.5 overflow-x-auto pb-8">
         <div
           v-for="point in statistiques.serie"
           :key="point.periode"
-          class="group relative flex h-full min-w-9 flex-1 flex-col items-center justify-end"
+          class="group relative flex h-full min-w-9 flex-1 cursor-default flex-col items-center justify-end rounded outline-none focus-visible:ring-2 focus-visible:ring-neutral-900/20 dark:focus-visible:ring-neutral-100/20"
+          tabindex="0"
+          :aria-label="`${libellePeriode(point.periode)} : ${point.points} point${point.points > 1 ? 's' : ''}, ${point.taches} tâche${point.taches > 1 ? 's' : ''} terminée${point.taches > 1 ? 's' : ''}`"
+          :title="`${point.points} pts · ${point.taches} t.`"
         >
-          <span class="mb-1 text-[11px] font-semibold text-neutral-500 opacity-0 transition-opacity group-hover:opacity-100">
+          <span
+            class="mb-1 whitespace-nowrap text-[11px] font-semibold text-neutral-500 opacity-0 transition-opacity group-hover:opacity-100 group-focus:opacity-100"
+          >
             {{ point.points }} pts · {{ point.taches }} t.
           </span>
           <div
-            class="w-full max-w-12 rounded-t-md bg-neutral-800 transition-colors group-hover:bg-neutral-600 dark:bg-neutral-300 dark:group-hover:bg-neutral-100"
-            :style="{ height: Math.max(4, Math.round((point.points / maximumSerie) * 100)) + '%' }"
+            class="w-full max-w-12 rounded-t-md transition-colors"
+            :class="
+              barreSansPoints(point)
+                ? 'border border-dashed border-neutral-400 bg-neutral-200 group-hover:bg-neutral-300 dark:border-neutral-600 dark:bg-neutral-700'
+                : 'bg-neutral-800 group-hover:bg-neutral-600 dark:bg-neutral-300 dark:group-hover:bg-neutral-100'
+            "
+            :style="{ height: hauteurBarre(point) + '%' }"
           ></div>
           <span class="absolute -bottom-7 whitespace-nowrap text-[10px] text-neutral-400">
             {{ libellePeriode(point.periode) }}
@@ -209,7 +287,10 @@ const classeChampDate =
               :key="tache.id"
               class="rounded-lg border border-neutral-200 bg-white p-3 dark:border-neutral-700 dark:bg-neutral-900"
             >
-              <RouterLink :to="{ name: 'projet', params: { id: tache.projet } }" class="block hover:text-neutral-700 dark:hover:text-neutral-200">
+              <RouterLink
+                :to="{ name: 'projet', params: { id: tache.projet }, query: { tache: tache.id } }"
+                class="block hover:text-neutral-700 dark:hover:text-neutral-200"
+              >
                 <div class="flex flex-wrap items-start justify-between gap-2">
                   <div class="min-w-0">
                     <p class="truncate text-sm font-medium">{{ tache.titre }}</p>

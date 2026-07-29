@@ -62,9 +62,9 @@ func preparerProjetStatistiques(t *testing.T, depot *Depot, ctx context.Context)
 		t.Fatalf("creation projet: %v", err)
 	}
 	_, err = depot.bd.Exec(ctx, `
-		INSERT INTO colonnes (id, projet, nom, position) VALUES
-		($1, $3, 'A faire', 0),
-		($2, $3, 'Termine', 1)`, todo, fini, projet)
+		INSERT INTO colonnes (id, projet, nom, position, terminale) VALUES
+		($1, $3, 'A faire', 0, false),
+		($2, $3, 'Termine', 1, true)`, todo, fini, projet)
 	if err != nil {
 		t.Fatalf("creation colonnes: %v", err)
 	}
@@ -89,7 +89,7 @@ func TestStatistiquesUtilisentLaDateDeFinEtPasLaDerniereModification(t *testing.
 		t.Fatalf("creation tache terminee: %v", err)
 	}
 
-	stats, err := depot.Statistiques(ctx, []string{projet}, terminee.Add(-24*time.Hour), terminee.Add(24*time.Hour), "day")
+	stats, err := depot.Statistiques(ctx, []string{projet}, terminee.Add(-24*time.Hour), terminee.Add(24*time.Hour), "day", 100, 0)
 	if err != nil {
 		t.Fatalf("statistiques: %v", err)
 	}
@@ -112,7 +112,7 @@ func TestStatistiquesListentLesTachesTermineesParPeriodeTousProjets(t *testing.T
 		t.Fatalf("creation second projet: %v", err)
 	}
 	_, err = depot.bd.Exec(ctx, `
-		INSERT INTO colonnes (id, projet, nom, position) VALUES ($1, $2, 'Termine', 0)
+		INSERT INTO colonnes (id, projet, nom, position, terminale) VALUES ($1, $2, 'Termine', 0, true)
 		ON CONFLICT (id) DO NOTHING`, secondeFin, secondProjet)
 	if err != nil {
 		t.Fatalf("creation colonne second projet: %v", err)
@@ -128,7 +128,7 @@ func TestStatistiquesListentLesTachesTermineesParPeriodeTousProjets(t *testing.T
 		t.Fatalf("creation taches terminees: %v", err)
 	}
 
-	stats, err := depot.Statistiques(ctx, []string{premierProjet, secondProjet}, periode.Add(-24*time.Hour), periode.Add(24*time.Hour), "day")
+	stats, err := depot.Statistiques(ctx, []string{premierProjet, secondProjet}, periode.Add(-24*time.Hour), periode.Add(24*time.Hour), "day", 100, 0)
 	if err != nil {
 		t.Fatalf("statistiques: %v", err)
 	}
@@ -147,7 +147,7 @@ func TestStatistiquesListentLesTachesTermineesParPeriodeTousProjets(t *testing.T
 	}
 }
 
-func TestDeplacerTacheRenseigneLaDateDeFinSeulementEnDerniereColonne(t *testing.T) {
+func TestDeplacerTacheRenseigneLaDateDeFinEnColonneTerminale(t *testing.T) {
 	depot, ctx, fermer := depotTest(t)
 	defer fermer()
 	_, projet, todo, fini, utilisateur := preparerProjetStatistiques(t, depot, ctx)
@@ -169,16 +169,93 @@ func TestDeplacerTacheRenseigneLaDateDeFinSeulementEnDerniereColonne(t *testing.
 		t.Fatalf("lecture date de fin: %v", err)
 	}
 	if terminee == nil {
-		t.Fatal("date de fin absente apres deplacement en derniere colonne")
+		t.Fatal("date de fin absente apres deplacement en colonne terminale")
+	}
+}
+
+func TestDeplacerTacheConserveLaDateDeFinApresReouverture(t *testing.T) {
+	depot, ctx, fermer := depotTest(t)
+	defer fermer()
+	_, projet, todo, fini, utilisateur := preparerProjetStatistiques(t, depot, ctx)
+
+	var tache string
+	err := depot.bd.QueryRow(ctx, `
+		INSERT INTO taches (projet, colonne, titre, points, createur)
+		VALUES ($1, $2, 'Tache a rouvrir', 3, $3)
+		RETURNING id`, projet, todo, utilisateur).Scan(&tache)
+	if err != nil {
+		t.Fatalf("creation tache: %v", err)
 	}
 
+	// Premiere completion : la date de fin est renseignee.
+	if err := depot.DeplacerTache(ctx, tache, fini, 0); err != nil {
+		t.Fatalf("deplacement vers termine: %v", err)
+	}
+	var premiereFin *time.Time
+	if err := depot.bd.QueryRow(ctx, `SELECT terminee FROM taches WHERE id = $1`, tache).Scan(&premiereFin); err != nil {
+		t.Fatalf("lecture date de fin: %v", err)
+	}
+	if premiereFin == nil {
+		t.Fatal("date de fin absente apres deplacement en colonne terminale")
+	}
+
+	// Reouverture : la tache quitte la colonne terminale mais garde son historique.
 	if err := depot.DeplacerTache(ctx, tache, todo, 0); err != nil {
 		t.Fatalf("deplacement hors termine: %v", err)
 	}
-	if err := depot.bd.QueryRow(ctx, `SELECT terminee FROM taches WHERE id = $1`, tache).Scan(&terminee); err != nil {
-		t.Fatalf("lecture date de fin apres sortie: %v", err)
+	var apresReouverture *time.Time
+	if err := depot.bd.QueryRow(ctx, `SELECT terminee FROM taches WHERE id = $1`, tache).Scan(&apresReouverture); err != nil {
+		t.Fatalf("lecture date de fin apres reouverture: %v", err)
 	}
-	if terminee != nil {
-		t.Fatal("date de fin conservee apres sortie de la derniere colonne")
+	if apresReouverture == nil {
+		t.Fatal("date de fin effacee apres reouverture : l'historique de completion est perdu")
+	}
+	if !apresReouverture.Equal(*premiereFin) {
+		t.Fatalf("date de fin modifiee a la reouverture : %v puis %v", premiereFin, apresReouverture)
+	}
+
+	// Retour en colonne terminale : la premiere date de completion est conservee.
+	if err := depot.DeplacerTache(ctx, tache, fini, 0); err != nil {
+		t.Fatalf("re-deplacement vers termine: %v", err)
+	}
+	var apresReprise *time.Time
+	if err := depot.bd.QueryRow(ctx, `SELECT terminee FROM taches WHERE id = $1`, tache).Scan(&apresReprise); err != nil {
+		t.Fatalf("lecture date de fin apres reprise: %v", err)
+	}
+	if apresReprise == nil || !apresReprise.Equal(*premiereFin) {
+		t.Fatalf("premiere date de completion non conservee au retour en colonne terminale : %v puis %v", premiereFin, apresReprise)
+	}
+}
+
+func TestStatistiquesUtilisentLaColonneTerminaleExpliciteMalgreUneColonneSuivante(t *testing.T) {
+	depot, ctx, fermer := depotTest(t)
+	defer fermer()
+	_, projet, _, fini, utilisateur := preparerProjetStatistiques(t, depot, ctx)
+
+	// Une colonne « Archive » est ajoutee apres « Termine » : elle occupe desormais
+	// la position maximale sans etre la colonne terminale.
+	archive := "00000000-0000-4000-8000-000000000008"
+	if _, err := depot.bd.Exec(ctx, `
+		INSERT INTO colonnes (id, projet, nom, position, terminale) VALUES ($1, $2, 'Archive', 2, false)
+		ON CONFLICT (id) DO NOTHING`, archive, projet); err != nil {
+		t.Fatalf("creation colonne archive: %v", err)
+	}
+
+	// La tache reste dans « Termine » (colonne terminale) et non dans « Archive ».
+	terminee := time.Now().AddDate(0, 0, -1).Truncate(time.Second)
+	if _, err := depot.bd.Exec(ctx, `
+		INSERT INTO taches (projet, colonne, titre, points, createur, terminee)
+		VALUES ($1, $2, 'Tache terminee non archivee', 5, $3, $4)`, projet, fini, utilisateur, terminee); err != nil {
+		t.Fatalf("creation tache terminee: %v", err)
+	}
+
+	stats, err := depot.Statistiques(ctx, []string{projet}, terminee.Add(-24*time.Hour), terminee.Add(24*time.Hour), "day", 100, 0)
+	if err != nil {
+		t.Fatalf("statistiques: %v", err)
+	}
+	// Avec un reperage par max(position), la tache serait ignoree car « Archive » est
+	// plus a droite ; la colonne terminale explicite doit au contraire la comptabiliser.
+	if stats.Totaux.Terminees != 1 || stats.Totaux.Points != 5 {
+		t.Fatalf("statistiques terminees = %d/%d, attendu 1/5 via la colonne terminale explicite", stats.Totaux.Terminees, stats.Totaux.Points)
 	}
 }

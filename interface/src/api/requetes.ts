@@ -103,6 +103,10 @@ export function utiliserStatistiques(groupe: Ref<string>, parametres: Ref<Parame
         ).data,
       ),
     enabled: computed(() => groupe.value !== ""),
+    // Les statistiques sont agrégées et coûteuses : on évite de les refetcher à
+    // chaque remontage/retour d'onglet. Le temps réel force déjà l'invalidation
+    // lorsqu'une tâche change réellement.
+    staleTime: 60_000,
   })
 }
 

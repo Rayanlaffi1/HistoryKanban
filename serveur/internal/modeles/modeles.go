@@ -48,12 +48,13 @@ type Projet struct {
 }
 
 type Colonne struct {
-	ID       string `json:"id"`
-	Projet   string `json:"projet"`
-	Nom      string `json:"nom"`
-	Couleur  string `json:"couleur"`
-	Position int    `json:"position"`
-	Limite   *int   `json:"limite"`
+	ID        string `json:"id"`
+	Projet    string `json:"projet"`
+	Nom       string `json:"nom"`
+	Couleur   string `json:"couleur"`
+	Position  int    `json:"position"`
+	Limite    *int   `json:"limite"`
+	Terminale bool   `json:"terminale"`
 }
 
 type Lot struct {
@@ -160,13 +161,16 @@ type Preferences struct {
 }
 
 type LigneClassement struct {
-	Utilisateur  string `json:"utilisateur"`
-	Nom          string `json:"nom"`
-	Prenom       string `json:"prenom"`
-	Points       int    `json:"points"`
-	Taches       int    `json:"taches"`
-	Creees       int    `json:"creees"`
-	Commentaires int    `json:"commentaires"`
+	Utilisateur string `json:"utilisateur"`
+	Nom         string `json:"nom"`
+	Prenom      string `json:"prenom"`
+	// Points repartit les points d'une tache entre ses affectes : une tache de 3 points
+	// portee par 2 personnes credite 1,5 point a chacune. Le total du classement reste
+	// ainsi coherent avec la tuile « points realises ». D'ou un flottant plutot qu'un entier.
+	Points       float64 `json:"points"`
+	Taches       int     `json:"taches"`
+	Creees       int     `json:"creees"`
+	Commentaires int     `json:"commentaires"`
 }
 
 type PointSerie struct {

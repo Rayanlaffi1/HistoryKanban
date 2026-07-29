@@ -161,8 +161,7 @@ func (d *Depot) CreerTache(ctx context.Context, tache modeles.Tache) (*modeles.T
 		INSERT INTO taches (projet, colonne, lot, titre, description, points, urgence, echeance, urls, createur, position, terminee)
 		SELECT $1, c.id, $3, $4, $5, $6, $7, $8, $9, $10,
 			(SELECT coalesce(max(position), -1) + 1 FROM taches WHERE colonne = c.id),
-			CASE WHEN c.position = (SELECT max(cc.position) FROM colonnes cc WHERE cc.projet = c.projet)
-				THEN now() ELSE NULL END
+			CASE WHEN c.terminale THEN now() ELSE NULL END
 		FROM colonnes c
 		WHERE c.id = $2 AND c.projet = $1
 		RETURNING id, position, creation, modification`,
@@ -326,9 +325,8 @@ func (d *Depot) DeplacerTache(ctx context.Context, id, colonne string, position 
 	resultat, erreur := transaction.Exec(ctx, `
 		UPDATE taches t SET colonne = $2, position = $3, modification = now(),
 			terminee = CASE
-				WHEN c.position = (SELECT max(cc.position) FROM colonnes cc WHERE cc.projet = c.projet)
-					THEN coalesce(t.terminee, now())
-				ELSE NULL
+				WHEN c.terminale THEN coalesce(t.terminee, now())
+				ELSE t.terminee
 			END
 		FROM colonnes c
 		WHERE t.id = $1 AND c.id = $2 AND c.projet = t.projet`,

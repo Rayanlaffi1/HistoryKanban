@@ -57,17 +57,18 @@ func (d *Depot) CreerProjet(ctx context.Context, projet modeles.Projet) (*modele
 		return nil, erreur
 	}
 	colonnes := []struct {
-		nom     string
-		couleur string
+		nom       string
+		couleur   string
+		terminale bool
 	}{
-		{"À faire", "#737373"},
-		{"En cours", "#525252"},
-		{"Terminé", "#404040"},
+		{"À faire", "#737373", false},
+		{"En cours", "#525252", false},
+		{"Terminé", "#404040", true},
 	}
 	for position, colonne := range colonnes {
 		_, erreur = transaction.Exec(ctx,
-			`INSERT INTO colonnes (projet, nom, couleur, position) VALUES ($1, $2, $3, $4)`,
-			projet.ID, colonne.nom, colonne.couleur, position)
+			`INSERT INTO colonnes (projet, nom, couleur, position, terminale) VALUES ($1, $2, $3, $4, $5)`,
+			projet.ID, colonne.nom, colonne.couleur, position, colonne.terminale)
 		if erreur != nil {
 			return nil, erreur
 		}
@@ -92,7 +93,7 @@ func (d *Depot) SupprimerProjet(ctx context.Context, id string) error {
 
 func (d *Depot) Colonnes(ctx context.Context, projet string) ([]modeles.Colonne, error) {
 	lignes, erreur := d.bd.Query(ctx,
-		`SELECT id, projet, nom, couleur, position, limite FROM colonnes WHERE projet = $1 ORDER BY position`, projet)
+		`SELECT id, projet, nom, couleur, position, limite, terminale FROM colonnes WHERE projet = $1 ORDER BY position`, projet)
 	if erreur != nil {
 		return nil, erreur
 	}
@@ -101,7 +102,7 @@ func (d *Depot) Colonnes(ctx context.Context, projet string) ([]modeles.Colonne,
 	for lignes.Next() {
 		var colonne modeles.Colonne
 		if erreur := lignes.Scan(&colonne.ID, &colonne.Projet, &colonne.Nom, &colonne.Couleur,
-			&colonne.Position, &colonne.Limite); erreur != nil {
+			&colonne.Position, &colonne.Limite, &colonne.Terminale); erreur != nil {
 			return nil, erreur
 		}
 		colonnes = append(colonnes, colonne)
@@ -113,9 +114,9 @@ func (d *Depot) CreerColonne(ctx context.Context, colonne modeles.Colonne) (*mod
 	erreur := d.bd.QueryRow(ctx, `
 		INSERT INTO colonnes (projet, nom, couleur, limite, position)
 		VALUES ($1, $2, $3, $4, (SELECT coalesce(max(position), -1) + 1 FROM colonnes WHERE projet = $1))
-		RETURNING id, projet, nom, couleur, position, limite`,
+		RETURNING id, projet, nom, couleur, position, limite, terminale`,
 		colonne.Projet, colonne.Nom, colonne.Couleur, colonne.Limite).
-		Scan(&colonne.ID, &colonne.Projet, &colonne.Nom, &colonne.Couleur, &colonne.Position, &colonne.Limite)
+		Scan(&colonne.ID, &colonne.Projet, &colonne.Nom, &colonne.Couleur, &colonne.Position, &colonne.Limite, &colonne.Terminale)
 	if erreur != nil {
 		return nil, erreur
 	}

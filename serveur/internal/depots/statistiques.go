@@ -15,8 +15,19 @@ const cteTerminees = `
 		JOIN colonnes c ON c.id = t.colonne
 		WHERE t.projet = ANY($1) AND t.suppression IS NULL
 			AND t.terminee BETWEEN $2 AND $3
-			AND c.position = (SELECT max(cc.position) FROM colonnes cc WHERE cc.projet = t.projet)
+			AND c.terminale
 	)`
+
+// Les agregats temporels sont regroupes sur la journee civile locale via le littéral
+// SQL « AT TIME ZONE 'Europe/Paris' » : une tache terminee le 28/07 a 23h30 UTC compte
+// pour le 29/07 a Paris. Postgres embarque la base des fuseaux, donc le passage heure
+// d'ete / heure d'hiver est pris en charge automatiquement.
+
+// Plafond de la liste detaillee des taches terminees pour eviter une reponse non bornee.
+const (
+	limiteTermineesParDefaut = 100
+	limiteTermineesMax       = 500
+)
 
 func (d *Depot) IdentifiantsProjets(ctx context.Context, groupe string) ([]string, error) {
 	lignes, erreur := d.bd.Query(ctx, `SELECT id FROM projets WHERE groupe = $1`, groupe)
@@ -35,7 +46,7 @@ func (d *Depot) IdentifiantsProjets(ctx context.Context, groupe string) ([]strin
 	return identifiants, lignes.Err()
 }
 
-func (d *Depot) Statistiques(ctx context.Context, projets []string, debut, fin time.Time, granularite string) (*modeles.Statistiques, error) {
+func (d *Depot) Statistiques(ctx context.Context, projets []string, debut, fin time.Time, granularite string, limite, offset int) (*modeles.Statistiques, error) {
 	statistiques := &modeles.Statistiques{
 		Classement: []modeles.LigneClassement{},
 		Serie:      []modeles.PointSerie{},
@@ -43,6 +54,15 @@ func (d *Depot) Statistiques(ctx context.Context, projets []string, debut, fin t
 	}
 	if len(projets) == 0 {
 		return statistiques, nil
+	}
+	if limite <= 0 {
+		limite = limiteTermineesParDefaut
+	}
+	if limite > limiteTermineesMax {
+		limite = limiteTermineesMax
+	}
+	if offset < 0 {
+		offset = 0
 	}
 	parLigne := map[string]*modeles.LigneClassement{}
 	assurer := func(utilisateur, nom, prenom string) *modeles.LigneClassement {
@@ -54,9 +74,15 @@ func (d *Depot) Statistiques(ctx context.Context, projets []string, debut, fin t
 		return ligne
 	}
 
+	// Les points d'une tache sont repartis a parts egales entre ses affectes (a defaut,
+	// credites a sa creatrice ou son createur). count(*) OVER vaut 1 quand la tache n'a aucune
+	// affectation (jointure a gauche => une seule ligne). On evite ainsi le double comptage :
+	// la somme des points du classement egale la somme des points des taches terminees.
 	lignes, erreur := d.bd.Query(ctx, cteTerminees+`,
 		contributions AS (
-			SELECT te.id, te.points, coalesce(a.utilisateur, te.createur) AS utilisateur
+			SELECT te.id,
+				coalesce(a.utilisateur, te.createur) AS utilisateur,
+				te.points::double precision / count(*) OVER (PARTITION BY te.id) AS points
 			FROM terminees te
 			LEFT JOIN affectations a ON a.tache = te.id
 		)
@@ -70,7 +96,8 @@ func (d *Depot) Statistiques(ctx context.Context, projets []string, debut, fin t
 	}
 	for lignes.Next() {
 		var utilisateur, nom, prenom string
-		var points, taches int
+		var points float64
+		var taches int
 		if erreur := lignes.Scan(&utilisateur, &nom, &prenom, &points, &taches); erreur != nil {
 			lignes.Close()
 			return nil, erreur
@@ -148,7 +175,7 @@ func (d *Depot) Statistiques(ctx context.Context, projets []string, debut, fin t
 	})
 
 	lignes, erreur = d.bd.Query(ctx, cteTerminees+`
-		SELECT date_trunc($4, terminee) AS periode, coalesce(sum(points), 0), count(*)
+		SELECT date_trunc($4, terminee AT TIME ZONE 'Europe/Paris') AS periode, coalesce(sum(points), 0), count(*)
 		FROM terminees
 		GROUP BY periode
 		ORDER BY periode`,
@@ -172,13 +199,14 @@ func (d *Depot) Statistiques(ctx context.Context, projets []string, debut, fin t
 	}
 
 	lignes, erreur = d.bd.Query(ctx, cteTerminees+`
-		SELECT date_trunc($4, te.terminee) AS periode,
+		SELECT date_trunc($4, te.terminee AT TIME ZONE 'Europe/Paris') AS periode,
 			te.id, p.id, p.nom, p.couleur, t.titre, te.points, t.urgence, te.terminee
 		FROM terminees te
 		JOIN taches t ON t.id = te.id
 		JOIN projets p ON p.id = t.projet
-		ORDER BY periode DESC, p.nom, te.terminee DESC, t.titre`,
-		projets, debut, fin, granularite)
+		ORDER BY periode DESC, p.nom, te.terminee DESC, t.titre
+		LIMIT $5 OFFSET $6`,
+		projets, debut, fin, granularite, limite, offset)
 	if erreur != nil {
 		return nil, erreur
 	}
@@ -213,8 +241,7 @@ func (d *Depot) Statistiques(ctx context.Context, projets []string, debut, fin t
 	erreur = d.bd.QueryRow(ctx, `
 		SELECT count(*),
 			coalesce(sum(t.points), 0),
-			count(*) FILTER (WHERE t.echeance < now()
-				AND c.position <> (SELECT max(cc.position) FROM colonnes cc WHERE cc.projet = t.projet))
+			count(*) FILTER (WHERE t.echeance < now() AND NOT c.terminale)
 		FROM taches t
 		JOIN colonnes c ON c.id = t.colonne
 		WHERE t.projet = ANY($1) AND t.suppression IS NULL`, projets).
