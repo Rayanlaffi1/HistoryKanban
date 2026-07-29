@@ -49,18 +49,18 @@ L'acces se fait en HTTPS via Traefik (certificat auto-signe, une exception de se
 
 L'application est aussi accessible depuis une autre machine du reseau grace aux domaines [sslip.io](https://sslip.io), qui resolvent `historykanban.<IP>.sslip.io` vers `<IP>` sans configuration DNS. Les deux machines doivent pouvoir resoudre les DNS publics (sslip.io est un service DNS public).
 
-1. Trouver l'adresse IP locale de la machine qui heberge la pile : `ipconfig` sous Windows (champ « Adresse IPv4 »), `ip addr` ou `ifconfig` sous Linux et macOS. Exemple : `192.168.1.42`.
-2. Renseigner cette adresse dans `.env` avec la ligne `IPRESEAU=192.168.1.42` (ou generer les secrets avec `.\scripts\initialiser-secrets.ps1 -IpReseau 192.168.1.42` / `./scripts/initialiser-secrets.sh --ip 192.168.1.42`, ce qui ajoute aussi le domaine au certificat).
+1. Trouver l'adresse IP locale de la machine qui heberge la pile : `ipconfig` sous Windows (champ « Adresse IPv4 »), `ip addr` ou `ifconfig` sous Linux et macOS.
+2. Renseigner cette adresse dans `.env` avec la ligne `IPRESEAU=<IP>` (ou generer les secrets avec `.\scripts\initialiser-secrets.ps1 -IpReseau <IP>` / `./scripts/initialiser-secrets.sh --ip <IP>`, ce qui ajoute aussi le domaine au certificat).
 3. Redemarrer la pile : `docker compose up -d --build`.
 4. Depuis n'importe quelle machine du reseau, ouvrir :
 
 | Service | URL |
 | --- | --- |
-| Interface | https://historykanban.192.168.1.42.sslip.io |
-| API | https://historykanban.192.168.1.42.sslip.io/api |
-| Keycloak | https://auth.historykanban.192.168.1.42.sslip.io |
-| Images MinIO | https://images.historykanban.192.168.1.42.sslip.io |
-| MailHog | https://courriel.historykanban.192.168.1.42.sslip.io |
+| Interface | https://historykanban.<IP>.sslip.io |
+| API | https://historykanban.<IP>.sslip.io/api |
+| Keycloak | https://auth.historykanban.<IP>.sslip.io |
+| Images MinIO | https://images.historykanban.<IP>.sslip.io |
+| MailHog | https://courriel.historykanban.<IP>.sslip.io |
 
 Le certificat reste auto-signe : accepter l'exception de securite pour l'interface puis pour Keycloak (ouvrir une fois `https://auth.historykanban.<IP>.sslip.io` dans un onglet). Le routage Traefik accepte n'importe quelle IP dans le domaine, mais la connexion Keycloak et la validation des jetons ne fonctionnent que pour l'adresse declaree dans `IPRESEAU`.
 
